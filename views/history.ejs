@@ -1,0 +1,45 @@
+<%- include('partials/header') %>
+<div class="page-head">
+  <h1>History</h1>
+  <form method="get" action="/history" class="inline-form compact" data-autosubmit>
+    <select name="medication_id">
+      <option value="">All medications</option>
+      <% meds.forEach(m => { %><option value="<%= m.id %>" <%= m.id === medId ? 'selected' : '' %>><%= m.name %></option><% }) %>
+    </select>
+    <noscript><button class="btn btn-sm">Filter</button></noscript>
+  </form>
+</div>
+
+<% if (!logs.length) { %>
+  <section class="card muted">Nothing logged yet.</section>
+<% } else { %>
+  <section class="list">
+    <% logs.forEach(l => { const med = { form: l.form, strength: l.strength, strength_unit: l.strength_unit }; %>
+      <article class="card log-row">
+        <div class="grow">
+          <div><strong><%= l.med_name %></strong>
+            <span class="badge badge-<%= l.status %>"><%= l.status %></span>
+            <% if (l.shortfall > 0) { %><span class="badge badge-overdue">short <%= u.fmtNum(l.shortfall, 3) %> <%= l.strength_unit %></span><% } %>
+          </div>
+          <div class="muted small">
+            <%= u.fmtDateTime(l.taken_at, tz) %>
+            <% if (l.scheduled_for) { %> · scheduled <%= u.fmtTime(l.scheduled_for, tz) %><% } else { %> · unscheduled<% } %>
+          </div>
+          <% if (l.status === 'taken') { %>
+            <div class="small">
+              <%= u.fmtNum(l.dose, 3) %> <%= l.strength_unit %>
+              <% if (l.units_used) { %> · <%= u.fmtNum(l.units_used, 3) %> <%= u.formName(med, l.units_used) %> from stock<% } %>
+              <% if (l.supplies) { %> · <%= l.supplies %><% } %>
+            </div>
+          <% } %>
+          <% if (l.notes) { %><div class="small muted">“<%= l.notes %>”</div><% } %>
+        </div>
+        <form method="post" action="/doses/<%= l.id %>/undo" data-confirm="Delete this entry? Stock and supplies it used will be put back.">
+          <%- csrf %><input type="hidden" name="return_to" value="/history<%= medId ? '?medication_id=' + medId : '' %>">
+          <button class="btn btn-ghost btn-sm">Delete</button>
+        </form>
+      </article>
+    <% }) %>
+  </section>
+<% } %>
+<%- include('partials/footer') %>

@@ -1,0 +1,70 @@
+<%- include('partials/header') %>
+<div class="page-head"><h1><%= title %></h1></div>
+<% if (isSetup) { %>
+  <p class="lead">Welcome! Set up your profile so reminders arrive at the right local time.</p>
+<% } %>
+<% if (typeof error !== 'undefined' && error) { %><div class="flash flash-error"><%= error %></div><% } %>
+
+<form method="post" action="/profile" class="card stack">
+  <%- csrf %>
+  <label>Display name
+    <input name="display_name" required maxlength="80" value="<%= values.display_name || '' %>">
+  </label>
+  <label>Time zone
+    <select name="timezone" <%= isSetup ? 'data-autodetect-tz' : '' %>>
+      <% timezones.forEach(z => { %><option value="<%= z %>" <%= z === values.timezone ? 'selected' : '' %>><%= z %></option><% }) %>
+    </select>
+  </label>
+  <label>Date of birth <span class="muted">(optional)</span>
+    <input type="date" name="date_of_birth" value="<%= values.date_of_birth || '' %>">
+  </label>
+  <div class="grid-2">
+    <label>Warn about expiry
+      <span class="input-suffix"><input type="number" name="expiry_warning_days" min="0" max="365" value="<%= values.expiry_warning_days ?? 30 %>"><span>days before</span></span>
+    </label>
+    <label>Follow-up reminder
+      <span class="input-suffix"><input type="number" name="reminder_followup_minutes" min="0" max="1440" value="<%= values.reminder_followup_minutes ?? 30 %>"><span>min after (0 = off)</span></span>
+    </label>
+  </div>
+  <label>Notes <span class="muted">(allergies, GP, pharmacy…)</span>
+    <textarea name="notes" rows="3"><%= values.notes || '' %></textarea>
+  </label>
+  <button class="btn btn-primary"><%= isSetup ? 'Create profile' : 'Save profile' %></button>
+</form>
+
+<% if (!isSetup) { %>
+  <section class="card stack" id="push-box">
+    <h2>Reminders on this device</h2>
+    <p class="muted" data-status>Checking notification support…</p>
+    <p class="muted small">Subscribed devices: <%= subs %>. On iPhone/iPad, first add Meditrak to your Home Screen (Share → Add to Home Screen), then open it from there to enable notifications.</p>
+    <div class="row-actions">
+      <button type="button" class="btn btn-primary" data-push="enable" hidden>Enable notifications</button>
+      <button type="button" class="btn" data-push="test" hidden>Send test</button>
+      <button type="button" class="btn btn-ghost" data-push="disable" hidden>Turn off on this device</button>
+    </div>
+  </section>
+
+  <section class="card stack">
+    <h2>Install the app</h2>
+    <p class="muted">Use your browser's <em>Install app</em> / <em>Add to Home Screen</em> option to get Meditrak as an app on your phone.</p>
+    <button type="button" class="btn" data-install hidden>Install Meditrak</button>
+  </section>
+
+  <section class="card stack">
+    <h2>Your data</h2>
+    <div class="row-actions">
+      <a class="btn" href="/profile/export">Export all data (JSON)</a>
+      <form method="post" action="/auth/logout"><%- csrf %><button class="btn">Sign out</button></form>
+    </div>
+    <details>
+      <summary class="danger-text">Delete account</summary>
+      <form method="post" action="/profile/delete" class="stack" data-confirm="Permanently delete your account and all your data?">
+        <%- csrf %>
+        <p class="small">This permanently removes your profile, medications, stock, schedules, supplies and history.</p>
+        <label>Type DELETE to confirm <input name="confirm" autocomplete="off"></label>
+        <button class="btn btn-danger">Delete everything</button>
+      </form>
+    </details>
+  </section>
+<% } %>
+<%- include('partials/footer') %>

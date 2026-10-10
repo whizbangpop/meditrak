@@ -1,0 +1,74 @@
+<%- include('../partials/header') %>
+<div class="page-head">
+  <div>
+    <h1><%= d.name %> <% if (d.archived) { %><span class="badge">archived</span><% } %></h1>
+    <span class="muted"><%= d.category || 'Supply' %></span>
+  </div>
+  <a class="btn btn-ghost btn-sm" href="/disposables/<%= d.id %>/edit">Edit</a>
+</div>
+<% if (d.notes) { %><p class="card note"><%= d.notes %></p><% } %>
+
+<section class="stats">
+  <div class="stat <%= d.low_stock_threshold !== null && d.quantity <= d.low_stock_threshold ? 'low' : '' %>"><strong><%= u.fmtNum(d.quantity) %></strong><span><%= d.unit %> on hand</span></div>
+  <div class="stat"><strong><%= d.low_stock_threshold !== null ? u.fmtNum(d.low_stock_threshold) : '—' %></strong><span>warn at</span></div>
+</section>
+
+<section class="section grid-2">
+  <form method="post" action="/disposables/<%= d.id %>/use" class="card stack">
+    <%- csrf %>
+    <h3>Use manually</h3>
+    <label>Quantity <input type="number" name="quantity" value="1" min="0" step="any"></label>
+    <label>Note <span class="muted">(optional)</span><input name="note" maxlength="200" placeholder="e.g. dropped, spare used"></label>
+    <button class="btn">Record use</button>
+  </form>
+  <form method="post" action="/disposables/<%= d.id %>/restock" class="card stack">
+    <%- csrf %>
+    <h3>Add stock</h3>
+    <label>Quantity received <input type="number" name="quantity" min="0" step="any" required></label>
+    <div class="grid-2">
+      <label>Batch <input name="batch" maxlength="60"></label>
+      <label>Expiry <input type="date" name="expiry_date"></label>
+    </div>
+    <button class="btn btn-primary">Add stock</button>
+  </form>
+</section>
+
+<details class="card section">
+  <summary>Correct the count</summary>
+  <form method="post" action="/disposables/<%= d.id %>/adjust" class="inline-form">
+    <%- csrf %>
+    <label class="grow">Actual count <input type="number" name="quantity" min="0" step="any" value="<%= d.quantity %>"></label>
+    <button class="btn">Set count</button>
+  </form>
+</details>
+
+<section class="section">
+  <h2>Used with</h2>
+  <% if (!links.length) { %><p class="muted small">Not linked. Open a medication and link this supply to use it automatically with each dose.</p><% } %>
+  <ul class="plain">
+    <% links.forEach(l => { %><li><a href="/medications/<%= l.id %>"><%= l.name %></a> — <%= u.fmtNum(l.quantity_per_dose) %> per dose</li><% }) %>
+  </ul>
+</section>
+
+<section class="section">
+  <h2>Activity</h2>
+  <% if (!txns.length) { %><p class="muted small">No activity yet.</p><% } %>
+  <ul class="plain small txns">
+    <% txns.forEach(t => { %>
+      <li>
+        <span class="<%= t.change > 0 ? 'pos' : 'neg' %>"><%= t.change > 0 ? '+' : '' %><%= u.fmtNum(t.change) %></span>
+        <span class="badge"><%= t.reason %></span>
+        <%= u.fmtDateTime(t.created_at, tz) %>
+        <% if (t.batch) { %> · batch <%= t.batch %><% } %>
+        <% if (t.expiry_date) { %> · exp <%= u.fmtDate(t.expiry_date) %><% } %>
+        <% if (t.note) { %> · <%= t.note %><% } %>
+      </li>
+    <% }) %>
+  </ul>
+</section>
+
+<section class="section row-actions">
+  <form method="post" action="/disposables/<%= d.id %>/archive"><%- csrf %><button class="btn btn-ghost"><%= d.archived ? 'Restore' : 'Archive' %></button></form>
+  <form method="post" action="/disposables/<%= d.id %>/delete" data-confirm="Delete <%= d.name %> and its activity?"><%- csrf %><button class="btn btn-ghost danger-text">Delete</button></form>
+</section>
+<%- include('../partials/footer') %>

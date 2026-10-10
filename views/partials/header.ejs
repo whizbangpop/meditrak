@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title><%= title ? title + ' · Meditrak' : 'Meditrak' %></title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0A0A0A" media="(prefers-color-scheme: dark)">
+  <link rel="preload" href="/fonts/outfit-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Meditrak">
+  <meta name="csrf-token" content="<%= csrfToken %>">
+  <link rel="stylesheet" href="/css/app.css">
+  <script src="/js/app.js" defer></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/" aria-label="Meditrak home"><%- include('logo') %></a>
+  <% if (user) { %>
+    <nav class="topnav">
+      <% if (profile) { %>
+        <a href="/" class="<%= currentPath === '/' ? 'active' : '' %>">Today</a>
+        <a href="/medications" class="<%= currentPath.startsWith('/medications') || currentPath.startsWith('/stock') || currentPath.startsWith('/schedules') ? 'active' : '' %>">Medications</a>
+        <a href="/disposables" class="<%= currentPath.startsWith('/disposables') ? 'active' : '' %>">Supplies</a>
+        <a href="/history" class="<%= currentPath.startsWith('/history') ? 'active' : '' %>">History</a>
+        <a href="/profile" class="<%= currentPath.startsWith('/profile') ? 'active' : '' %>">Profile</a>
+      <% } %>
+    </nav>
+  <% } %>
+</header>
+<main class="container">
+<% if (flash) { %>
+  <div class="flash flash-<%= flash.type %>" role="status"><%= flash.message %></div>
+<% } %>

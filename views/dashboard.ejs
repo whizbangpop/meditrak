@@ -1,0 +1,100 @@
+<%- include('partials/header') %>
+<div class="page-head">
+  <div>
+    <h1>Today</h1>
+    <span class="muted"><%= now.toFormat('cccc d LLLL') %></span>
+  </div>
+</div>
+
+<% if (alerts.length) { %>
+  <section class="alerts">
+    <% alerts.forEach(a => { %><a class="alert alert-<%= a.level %>" href="<%= a.href %>"><%= a.text %></a><% }) %>
+  </section>
+<% } %>
+
+<% if (!meds.length) { %>
+  <section class="card empty">
+    <p>You haven't added any medications yet.</p>
+    <a class="btn btn-primary" href="/medications/new">Add your first medication</a>
+  </section>
+<% } %>
+
+<% if (doses.length) { %>
+  <section class="list">
+    <% doses.forEach(d => { %>
+      <article class="card dose dose-<%= d.status %>">
+        <div class="dose-time">
+          <%= d.at.toFormat('HH:mm') %>
+          <% if (d.earlier) { %><small><%= d.at.toFormat('ccc') %></small><% } %>
+        </div>
+        <div class="dose-main">
+          <a href="/medications/<%= d.med.id %>" class="dose-name"><%= d.med.name %></a>
+          <div class="muted small"><%= d.doseText %></div>
+          <% if (d.log) { %>
+            <span class="badge badge-<%= d.log.status %>"><%= d.log.status === 'taken' ? 'Taken ' + u.fmtTime(d.log.taken_at, tz) : 'Skipped' %></span>
+            <% if (d.log.shortfall > 0) { %><span class="badge badge-overdue">stock short</span><% } %>
+          <% } else { %>
+            <span class="badge badge-<%= d.status %>"><%= d.status %></span>
+          <% } %>
+        </div>
+        <div class="dose-actions">
+          <% if (d.log) { %>
+            <form method="post" action="/doses/<%= d.log.id %>/undo" data-confirm="Undo this entry? Any stock it used will be put back.">
+              <%- csrf %><input type="hidden" name="return_to" value="/">
+              <button class="btn btn-ghost btn-sm">Undo</button>
+            </form>
+          <% } else { %>
+            <form method="post" action="/doses/take">
+              <%- csrf %>
+              <input type="hidden" name="schedule_id" value="<%= d.schedule.id %>">
+              <input type="hidden" name="scheduled_for" value="<%= d.key %>">
+              <input type="hidden" name="quick" value="1">
+              <input type="hidden" name="return_to" value="/">
+              <button class="btn btn-primary btn-sm">Take</button>
+            </form>
+            <a class="btn btn-ghost btn-sm" href="/doses/take?schedule_id=<%= d.schedule.id %>&scheduled_for=<%= encodeURIComponent(d.key) %>&return_to=/">Adjust</a>
+            <form method="post" action="/doses/skip">
+              <%- csrf %>
+              <input type="hidden" name="schedule_id" value="<%= d.schedule.id %>">
+              <input type="hidden" name="scheduled_for" value="<%= d.key %>">
+              <input type="hidden" name="return_to" value="/">
+              <button class="btn btn-ghost btn-sm">Skip</button>
+            </form>
+          <% } %>
+        </div>
+      </article>
+    <% }) %>
+  </section>
+<% } else if (meds.length) { %>
+  <section class="card muted">No scheduled doses today.</section>
+<% } %>
+
+<% if (prn.length) { %>
+  <h2>As needed</h2>
+  <section class="list">
+    <% prn.forEach(p => { %>
+      <article class="card dose">
+        <div class="dose-main">
+          <a href="/medications/<%= p.med.id %>" class="dose-name"><%= p.med.name %></a>
+          <div class="muted small"><%= p.doseText %><% if (p.schedule.notes) { %> · <%= p.schedule.notes %><% } %></div>
+        </div>
+        <div class="dose-actions">
+          <a class="btn btn-sm" href="/doses/take?schedule_id=<%= p.schedule.id %>&return_to=/">Log dose</a>
+        </div>
+      </article>
+    <% }) %>
+  </section>
+<% } %>
+
+<% if (meds.length) { %>
+  <form method="get" action="/doses/take" class="card inline-form">
+    <label class="grow">Log an unscheduled dose
+      <select name="medication_id">
+        <% meds.forEach(m => { %><option value="<%= m.id %>"><%= m.name %></option><% }) %>
+      </select>
+    </label>
+    <input type="hidden" name="return_to" value="/">
+    <button class="btn">Continue</button>
+  </form>
+<% } %>
+<%- include('partials/footer') %>

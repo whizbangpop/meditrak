@@ -1,0 +1,52 @@
+<%- include('../partials/header') %>
+<div class="page-head"><h1><%= title %></h1></div>
+<% if (typeof error !== 'undefined' && error) { %><div class="flash flash-error"><%= error %></div><% } %>
+
+<form method="post" action="<%= isNew ? '/medications' : '/medications/' + med.id %>" class="card stack" id="med-form">
+  <%- csrf %>
+  <label>Name
+    <input name="name" required maxlength="120" value="<%= values.name || '' %>" placeholder="e.g. Sertraline, Methotrexate">
+  </label>
+
+  <fieldset>
+    <legend>Form</legend>
+    <div class="segmented">
+      <% ['tablet', 'capsule', 'vial'].forEach(f => { %>
+        <label><input type="radio" name="form" value="<%= f %>" <%= (values.form || 'tablet') === f ? 'checked' : '' %>><span><%= f[0].toUpperCase() + f.slice(1) %></span></label>
+      <% }) %>
+    </div>
+  </fieldset>
+
+  <div class="grid-2">
+    <label><span data-label-solid>Strength per <span data-form-name>tablet</span></span><span data-label-vial hidden>Typical strength per ml</span>
+      <input type="number" name="strength" step="any" min="0" required value="<%= values.strength ?? '' %>">
+    </label>
+    <label>Unit
+      <select name="strength_unit">
+        <% u.STRENGTH_UNITS.forEach(x => { %><option <%= (values.strength_unit || 'mg') === x ? 'selected' : '' %>><%= x %></option><% }) %>
+      </select>
+    </label>
+  </div>
+  <p class="hint" data-label-vial hidden>Used to pre-fill new vials. Each vial you add records its own strength.</p>
+
+  <label>Default dose
+    <span class="input-suffix"><input type="number" name="default_dose" step="any" min="0" value="<%= values.default_dose ?? '' %>" data-default-dose><span data-unit-label><%= values.strength_unit || 'mg' %></span></span>
+    <span class="hint" data-label-solid>Leave blank to use one <span data-form-name>tablet</span>. Each schedule can override this.</span>
+    <span class="hint" data-label-vial hidden>Required for vials. Each schedule can override this.</span>
+  </label>
+
+  <label>Low stock warning at
+    <span class="input-suffix"><input type="number" name="low_stock_threshold" step="any" min="0" value="<%= values.low_stock_threshold ?? '' %>"><span data-stock-unit>tablets</span></span>
+    <span class="hint">Optional. You'll also be warned when under 7 days of scheduled doses remain.</span>
+  </label>
+
+  <label>Instructions <span class="muted">(optional)</span>
+    <textarea name="instructions" rows="2" placeholder="e.g. Take with food. Store in fridge."><%= values.instructions || '' %></textarea>
+  </label>
+
+  <div class="row-actions">
+    <button class="btn btn-primary"><%= isNew ? 'Add medication' : 'Save' %></button>
+    <a class="btn btn-ghost" href="<%= isNew ? '/medications' : '/medications/' + med.id %>">Cancel</a>
+  </div>
+</form>
+<%- include('../partials/footer') %>

@@ -1,0 +1,20 @@
+<%- include('partials/header') %>
+<section class="hero">
+  <h1 class="sr-only">Meditrak</h1>
+  <%- include('partials/logo', { size: 'xl' }) %>
+  <p class="lead">Track your medications, every box and vial you receive, and get reminders on your phone.</p>
+  <% if (oidcConfigured) { %>
+    <a class="btn btn-primary btn-block" href="/auth/login">Sign in with <%= providerName %></a>
+  <% } else { %>
+    <p class="flash flash-warn">Sign-in isn't configured yet. Set <code>OIDC_ISSUER</code>, <code>OIDC_CLIENT_ID</code> and <code>OIDC_CLIENT_SECRET</code>.</p>
+  <% } %>
+  <% if (devLogin) { %>
+    <form method="post" action="/auth/dev" class="card stack dev-login">
+      <%- csrf %>
+      <strong>Development sign-in</strong>
+      <label>Name <input name="name" value="Test User" required></label>
+      <button class="btn">Sign in (dev only)</button>
+    </form>
+  <% } %>
+</section>
+<%- include('partials/footer') %>

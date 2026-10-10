@@ -1,0 +1,136 @@
+<%- include('../partials/header') %>
+<div class="page-head">
+  <div>
+    <h1><%= med.name %> <% if (med.archived) { %><span class="badge">archived</span><% } %></h1>
+    <span class="muted">
+      <%= med.form === 'vial' ? 'Vial · typically ' + u.fmtNum(med.strength, 3) + ' ' + u.concUnit(med) : u.fmtNum(med.strength, 3) + ' ' + med.strength_unit + ' per ' + med.form %>
+      · default dose <%= u.doseText(med, med.default_dose, sum.currentConcentration) %>
+    </span>
+  </div>
+  <a class="btn btn-ghost btn-sm" href="/medications/<%= med.id %>/edit">Edit</a>
+</div>
+<% if (med.instructions) { %><p class="card note"><%= med.instructions %></p><% } %>
+
+<section class="stats">
+  <div class="stat <%= sum.low ? 'low' : '' %>"><strong><%= u.fmtNum(sum.units, 2) %></strong><span><%= u.stockUnit(med) %> in stock</span></div>
+  <div class="stat"><strong><%= u.fmtNum(sum.amount, 2) %></strong><span><%= med.strength_unit %> total</span></div>
+  <div class="stat <%= sum.daysLeft !== null && sum.daysLeft < 7 ? 'low' : '' %>"><strong><%= sum.daysLeft !== null ? Math.floor(sum.daysLeft) : '—' %></strong><span>days left</span></div>
+  <div class="stat"><strong><%= sum.nextExpiry ? u.fmtDate(sum.nextExpiry) : '—' %></strong><span>next expiry</span></div>
+</section>
+
+<!-- Schedules -->
+<section class="section">
+  <div class="section-head">
+    <h2>Schedules</h2>
+    <a class="btn btn-sm" href="/medications/<%= med.id %>/schedules/new">+ Schedule</a>
+  </div>
+  <% if (!schedules.length) { %><p class="muted">No schedule yet. Add one to get reminders.</p><% } %>
+  <div class="list">
+    <% schedules.forEach(s => { %>
+      <article class="card row <%= s.active ? '' : 'inactive' %>">
+        <div class="grow">
+          <strong><%= u.describeSchedule(s) %></strong>
+          <div class="small"><%= u.doseText(med, s.dose, sum.currentConcentration) %> per dose</div>
+          <div class="muted small">
+            From <%= u.fmtDate(s.start_date) %><% if (s.end_date) { %> to <%= u.fmtDate(s.end_date) %><% } %>
+            <% if (!s.active) { %> · paused<% } else if (s.next) { %> · next <%= s.next.toFormat('ccc d LLL, HH:mm') %><% } %>
+            <% if (s.frequency !== 'as_needed') { %> · <%= s.notify ? 'notifications on' : 'no notifications' %><% } %>
+          </div>
+          <% if (s.notes) { %><div class="small muted"><%= s.notes %></div><% } %>
+        </div>
+        <div class="row-actions vertical">
+          <a class="btn btn-ghost btn-sm" href="/schedules/<%= s.id %>/edit">Edit</a>
+          <form method="post" action="/schedules/<%= s.id %>/toggle"><%- csrf %><button class="btn btn-ghost btn-sm"><%= s.active ? 'Pause' : 'Resume' %></button></form>
+          <form method="post" action="/schedules/<%= s.id %>/delete" data-confirm="Delete this schedule?"><%- csrf %><button class="btn btn-ghost btn-sm danger-text">Delete</button></form>
+        </div>
+      </article>
+    <% }) %>
+  </div>
+</section>
+
+<!-- Stock -->
+<section class="section">
+  <div class="section-head">
+    <h2><%= med.form === 'vial' ? 'Vials' : 'Boxes & packets' %></h2>
+    <a class="btn btn-sm" href="/medications/<%= med.id %>/stock/new">+ <%= med.form === 'vial' ? 'Vial' : 'Box' %></a>
+  </div>
+  <% if (!allItems.length) { %><p class="muted">Nothing in stock. Add each <%= med.form === 'vial' ? 'vial' : 'box' %> you get from the pharmacy.</p><% } %>
+  <div class="list">
+    <% allItems.forEach(i => { const expired = i.expiry_date && i.expiry_date < today; %>
+      <article class="card row stock-row status-<%= i.status %> <%= expired && i.status === 'active' ? 'expired' : '' %>">
+        <div class="grow">
+          <strong><%= i.batch ? 'Batch ' + i.batch : 'No batch number' %></strong>
+          <% if (i.status !== 'active') { %><span class="badge"><%= i.status %></span><% } %>
+          <% if (expired && i.status === 'active') { %><span class="badge badge-overdue">expired</span><% } %>
+          <% if (i.opened_at && i.status === 'active') { %><span class="badge badge-due">opened</span><% } %>
+          <div class="small"><%= u.stockItemText(med, i) %></div>
+          <% if (i.remaining > 0) { %>
+            <div class="meter"><span style="width: <%= Math.min(100, Math.round(100 * i.remaining / (med.form === 'vial' ? i.volume_ml : i.quantity))) %>%"></span></div>
+          <% } %>
+          <div class="muted small">Expires <%= u.fmtDate(i.expiry_date) %> · received <%= u.fmtDate(i.received_date) %></div>
+          <% if (i.notes) { %><div class="small muted"><%= i.notes %></div><% } %>
+        </div>
+        <div class="row-actions vertical">
+          <a class="btn btn-ghost btn-sm" href="/stock/<%= i.id %>/edit">Edit</a>
+          <% if (i.status === 'active') { %>
+            <form method="post" action="/stock/<%= i.id %>/status" data-confirm="Mark as disposed? It will no longer be used for doses."><%- csrf %><input type="hidden" name="status" value="disposed"><button class="btn btn-ghost btn-sm">Dispose</button></form>
+          <% } else { %>
+            <form method="post" action="/stock/<%= i.id %>/status"><%- csrf %><input type="hidden" name="status" value="active"><button class="btn btn-ghost btn-sm">Reactivate</button></form>
+          <% } %>
+          <form method="post" action="/stock/<%= i.id %>/delete" data-confirm="Delete this item entirely?"><%- csrf %><button class="btn btn-ghost btn-sm danger-text">Delete</button></form>
+        </div>
+      </article>
+    <% }) %>
+  </div>
+  <% if (finishedCount) { %>
+    <p class="small"><a href="/medications/<%= med.id %><%= showAll ? '' : '?all=1' %>"><%= showAll ? 'Hide finished/disposed' : 'Show ' + finishedCount + ' finished/disposed' %></a></p>
+  <% } %>
+</section>
+
+<!-- Supplies -->
+<section class="section">
+  <div class="section-head"><h2>Supplies used per dose</h2></div>
+  <% if (!links.length) { %><p class="muted small">Link syringes, needles, swabs etc. to use them up automatically each time you log a dose.</p><% } %>
+  <div class="list">
+    <% links.forEach(l => { %>
+      <article class="card row">
+        <div class="grow"><strong><a href="/disposables/<%= l.id %>"><%= l.name %></a></strong>
+          <div class="small"><%= u.fmtNum(l.quantity_per_dose) %> <%= l.unit %> per dose · <%= u.fmtNum(l.quantity) %> left</div></div>
+        <form method="post" action="/medications/<%= med.id %>/disposables/<%= l.id %>/delete"><%- csrf %><button class="btn btn-ghost btn-sm">Unlink</button></form>
+      </article>
+    <% }) %>
+  </div>
+  <% if (disposables.length) { %>
+    <form method="post" action="/medications/<%= med.id %>/disposables" class="card inline-form">
+      <%- csrf %>
+      <label class="grow">Supply
+        <select name="disposable_id"><% disposables.forEach(d => { %><option value="<%= d.id %>"><%= d.name %></option><% }) %></select>
+      </label>
+      <label>Per dose <input type="number" name="quantity_per_dose" value="1" min="0" step="any" class="qty"></label>
+      <button class="btn">Link</button>
+    </form>
+  <% } else { %>
+    <p class="small"><a href="/disposables/new">Add a supply</a> first to link it here.</p>
+  <% } %>
+</section>
+
+<!-- Recent -->
+<section class="section">
+  <div class="section-head">
+    <h2>Recent doses</h2>
+    <a class="btn btn-sm" href="/doses/take?medication_id=<%= med.id %>&return_to=/medications/<%= med.id %>">Log a dose</a>
+  </div>
+  <% if (!logs.length) { %><p class="muted small">No doses logged yet.</p><% } %>
+  <ul class="plain small">
+    <% logs.forEach(l => { %>
+      <li><span class="badge badge-<%= l.status %>"><%= l.status %></span> <%= u.fmtDateTime(l.taken_at, tz) %><% if (l.dose) { %> · <%= u.fmtNum(l.dose, 3) %> <%= med.strength_unit %><% } %></li>
+    <% }) %>
+  </ul>
+  <% if (logs.length) { %><p class="small"><a href="/history?medication_id=<%= med.id %>">Full history →</a></p><% } %>
+</section>
+
+<section class="section row-actions">
+  <form method="post" action="/medications/<%= med.id %>/archive"><%- csrf %><button class="btn btn-ghost"><%= med.archived ? 'Restore medication' : 'Archive (stop reminders)' %></button></form>
+  <form method="post" action="/medications/<%= med.id %>/delete" data-confirm="Delete <%= med.name %> including all stock, schedules and history? This cannot be undone."><%- csrf %><button class="btn btn-ghost danger-text">Delete</button></form>
+</section>
+<%- include('../partials/footer') %>

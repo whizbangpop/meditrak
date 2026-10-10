@@ -1,0 +1,31 @@
+<%- include('../partials/header') %>
+<div class="page-head">
+  <h1><%= showArchived ? 'Archived medications' : 'Medications' %></h1>
+  <a class="btn btn-primary" href="/medications/new">+ Add</a>
+</div>
+
+<% if (!meds.length) { %>
+  <section class="card muted"><%= showArchived ? 'No archived medications.' : 'No medications yet.' %></section>
+<% } %>
+<section class="list">
+  <% meds.forEach(m => { %>
+    <a class="card med-card" href="/medications/<%= m.id %>">
+      <div class="grow">
+        <strong><%= m.name %></strong>
+        <div class="muted small">
+          <%= m.form === 'vial' ? 'Vial · ' + u.fmtNum(m.strength, 3) + ' ' + u.concUnit(m) : u.fmtNum(m.strength, 3) + ' ' + m.strength_unit + ' ' + m.form %>
+        </div>
+        <div class="small">
+          <% if (m.scheds.length) { %><%= m.scheds.map(s => u.describeSchedule(s)).join(' · ') %><% } else { %><span class="muted">No active schedule</span><% } %>
+        </div>
+      </div>
+      <div class="stock-pill <%= m.sum.low || (m.sum.daysLeft !== null && m.sum.daysLeft < 7) ? 'low' : '' %>">
+        <strong><%= u.fmtNum(m.sum.units, 1) %></strong>
+        <span><%= u.stockUnit(m) %></span>
+        <% if (m.sum.daysLeft !== null) { %><span class="small">≈ <%= Math.floor(m.sum.daysLeft) %> days</span><% } %>
+      </div>
+    </a>
+  <% }) %>
+</section>
+<p class="center"><a href="/medications<%= showArchived ? '' : '?archived=1' %>" class="muted small"><%= showArchived ? '← Back to current medications' : 'Show archived medications' %></a></p>
+<%- include('../partials/footer') %>

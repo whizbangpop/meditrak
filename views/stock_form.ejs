@@ -1,0 +1,65 @@
+<%- include('partials/header') %>
+<div class="page-head">
+  <div><h1><%= title %></h1><span class="muted"><%= med.name %></span></div>
+</div>
+<% if (typeof error !== 'undefined' && error) { %><div class="flash flash-error"><%= error %></div><% } %>
+
+<form method="post" action="<%= isNew ? '/medications/' + med.id + '/stock' : '/stock/' + item.id %>" class="card stack">
+  <%- csrf %>
+  <div class="grid-2">
+    <label>Batch / lot number
+      <input name="batch" maxlength="60" value="<%= values.batch || '' %>" autocapitalize="characters">
+    </label>
+    <label>Expiry date
+      <input type="date" name="expiry_date" value="<%= values.expiry_date || '' %>">
+    </label>
+  </div>
+
+  <% if (med.form === 'vial') { %>
+    <div class="grid-2">
+      <label>Strength
+        <span class="input-suffix"><input type="number" name="concentration" step="any" min="0" required value="<%= values.concentration ?? '' %>"><span><%= u.concUnit(med) %></span></span>
+      </label>
+      <label>Total volume
+        <span class="input-suffix"><input type="number" name="volume_ml" step="any" min="0" required value="<%= values.volume_ml ?? '' %>"><span>ml</span></span>
+      </label>
+    </div>
+    <% if (!isNew) { %>
+      <label>Volume remaining
+        <span class="input-suffix"><input type="number" name="remaining" step="any" min="0" required value="<%= values.remaining ?? '' %>"><span>ml</span></span>
+      </label>
+    <% } %>
+  <% } else { %>
+    <label><%= med.form[0].toUpperCase() + med.form.slice(1) %>s in this <%= isNew ? 'box' : 'item' %>
+      <span class="input-suffix"><input type="number" name="quantity" step="1" min="1" required value="<%= values.quantity ?? '' %>"><span><%= med.form %>s</span></span>
+      <span class="hint">Each <%= med.form %> is <%= u.fmtNum(med.strength, 3) %> <%= med.strength_unit %>.</span>
+    </label>
+    <% if (!isNew) { %>
+      <label>Remaining
+        <span class="input-suffix"><input type="number" name="remaining" step="any" min="0" required value="<%= values.remaining ?? '' %>"><span><%= med.form %>s</span></span>
+      </label>
+    <% } %>
+  <% } %>
+
+  <div class="grid-2">
+    <label>Received on
+      <input type="date" name="received_date" value="<%= values.received_date || '' %>">
+    </label>
+    <% if (isNew) { %>
+      <label>How many identical <%= med.form === 'vial' ? 'vials' : 'boxes' %>?
+        <input type="number" name="count" min="1" max="50" step="1" value="<%= values.count || 1 %>">
+        <span class="hint">Same batch &amp; expiry — each is tracked separately.</span>
+      </label>
+    <% } %>
+  </div>
+
+  <label>Notes <span class="muted">(optional)</span>
+    <input name="notes" maxlength="200" value="<%= values.notes || '' %>" placeholder="e.g. pharmacy, prescription number">
+  </label>
+
+  <div class="row-actions">
+    <button class="btn btn-primary"><%= isNew ? 'Add' : 'Save' %></button>
+    <a class="btn btn-ghost" href="/medications/<%= med.id %>">Cancel</a>
+  </div>
+</form>
+<%- include('partials/footer') %>

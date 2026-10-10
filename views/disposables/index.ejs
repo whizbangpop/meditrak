@@ -1,0 +1,25 @@
+<%- include('../partials/header') %>
+<div class="page-head">
+  <h1><%= showArchived ? 'Archived supplies' : 'Supplies' %></h1>
+  <a class="btn btn-primary" href="/disposables/new">+ Add</a>
+</div>
+<p class="muted small">Syringes, needles, swabs, sharps bins… Link them to a medication to use them automatically with each dose, or log use manually.</p>
+
+<% if (!items.length) { %><section class="card muted">No supplies yet.</section><% } %>
+<section class="list">
+  <% items.forEach(d => { const low = d.low_stock_threshold !== null && d.quantity <= d.low_stock_threshold; %>
+    <article class="card row">
+      <a class="grow plain-link" href="/disposables/<%= d.id %>">
+        <strong><%= d.name %></strong> <% if (d.category) { %><span class="badge"><%= d.category %></span><% } %>
+        <div class="muted small"><%= d.used_with ? 'Used with ' + d.used_with : 'Not linked to a medication' %></div>
+      </a>
+      <div class="stock-pill <%= low ? 'low' : '' %>"><strong><%= u.fmtNum(d.quantity) %></strong><span><%= d.unit %></span></div>
+      <form method="post" action="/disposables/<%= d.id %>/use">
+        <%- csrf %><input type="hidden" name="quantity" value="1"><input type="hidden" name="return_to" value="/disposables">
+        <button class="btn btn-sm" title="Use one">−1</button>
+      </form>
+    </article>
+  <% }) %>
+</section>
+<p class="center"><a href="/disposables<%= showArchived ? '' : '?archived=1' %>" class="muted small"><%= showArchived ? '← Back' : 'Show archived supplies' %></a></p>
+<%- include('../partials/footer') %>

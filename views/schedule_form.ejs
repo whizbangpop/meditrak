@@ -1,0 +1,69 @@
+<%- include('partials/header') %>
+<div class="page-head">
+  <div><h1><%= title %></h1><span class="muted"><%= med.name %></span></div>
+</div>
+<% if (typeof error !== 'undefined' && error) { %><div class="flash flash-error"><%= error %></div><% } %>
+
+<form method="post" action="<%= isNew ? '/medications/' + med.id + '/schedules' : '/schedules/' + schedule.id %>" class="card stack" id="schedule-form"
+      data-form="<%= med.form %>" data-strength="<%= med.strength %>" data-unit="<%= med.strength_unit %>" data-conc="<%= concentration || '' %>">
+  <%- csrf %>
+
+  <label>Dose per administration
+    <span class="input-suffix"><input type="number" name="dose" step="any" min="0" required value="<%= values.dose ?? med.default_dose %>" data-dose-input><span><%= med.strength_unit %></span></span>
+    <span class="hint" data-dose-preview></span>
+  </label>
+
+  <label>How often
+    <select name="frequency" data-frequency>
+      <% Object.entries(frequencies).forEach(([k, label]) => { %><option value="<%= k %>" <%= values.frequency === k ? 'selected' : '' %>><%= label %></option><% }) %>
+    </select>
+  </label>
+
+  <label data-show-for="every_n_days">Every
+    <span class="input-suffix"><input type="number" name="interval_days" min="1" max="365" step="1" value="<%= values.interval_days ?? 10 %>"><span>days</span></span>
+  </label>
+
+  <fieldset data-show-for="weekly">
+    <legend>Days</legend>
+    <div class="days">
+      <% dayNames.forEach((d, i) => { %>
+        <label class="chip"><input type="checkbox" name="days_of_week" value="<%= i + 1 %>" <%= (values.days_of_week || []).includes(i + 1) ? 'checked' : '' %>><span><%= d %></span></label>
+      <% }) %>
+    </div>
+  </fieldset>
+
+  <fieldset data-show-for="daily every_n_days weekly">
+    <legend>Times</legend>
+    <div class="times" data-times>
+      <% (values.times && values.times.length ? values.times : ['09:00']).forEach(t => { %>
+        <div class="time-row"><input type="time" name="times" value="<%= t %>"><button type="button" class="btn btn-ghost btn-sm" data-remove-time aria-label="Remove time">✕</button></div>
+      <% }) %>
+    </div>
+    <button type="button" class="btn btn-sm" data-add-time>+ Add time</button>
+  </fieldset>
+
+  <div class="grid-2">
+    <label>Start date
+      <input type="date" name="start_date" required value="<%= values.start_date || '' %>">
+      <span class="hint" data-show-for="every_n_days">Doses repeat from this date.</span>
+    </label>
+    <label>End date <span class="muted">(optional)</span>
+      <input type="date" name="end_date" value="<%= values.end_date || '' %>">
+    </label>
+  </div>
+
+  <label class="check" data-show-for="daily every_n_days weekly">
+    <input type="checkbox" name="notify" value="1" <%= values.notify ? 'checked' : '' %>> Send reminder notifications
+  </label>
+
+  <label>Notes <span class="muted">(optional)</span>
+    <input name="notes" maxlength="200" value="<%= values.notes || '' %>" placeholder="e.g. Rotate injection site">
+  </label>
+
+  <div class="row-actions">
+    <button class="btn btn-primary"><%= isNew ? 'Add schedule' : 'Save' %></button>
+    <a class="btn btn-ghost" href="/medications/<%= med.id %>">Cancel</a>
+  </div>
+</form>
+<template id="time-row-tpl"><div class="time-row"><input type="time" name="times" value="12:00"><button type="button" class="btn btn-ghost btn-sm" data-remove-time aria-label="Remove time">✕</button></div></template>
+<%- include('partials/footer') %>

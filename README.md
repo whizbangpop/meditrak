@@ -41,6 +41,8 @@ computer first.
    ```
    If port 3000 is taken on the host, set `HOST_PORT` (e.g. `HOST_PORT=3080`) in `.env`.
    Use `HOST_BIND=127.0.0.1` when the reverse proxy runs on the same machine.
+   The container fixes ownership of `./data` on start and runs the app as `PUID:PGID`
+   (default `1000:1000`), never as root.
 4. Put it behind a reverse proxy with HTTPS (Caddy, Traefik, nginx…). **HTTPS is required**
    for installing the PWA and for notifications on phones.
 

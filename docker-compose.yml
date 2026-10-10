@@ -5,7 +5,10 @@ services:
     env_file: .env
     environment:
       DATA_DIR: /data
+      PORT: 3000
     ports:
-      - "3000:3000"
+      # Host side is configurable in .env; the app always listens on 3000 inside the container.
+      # Set HOST_BIND=127.0.0.1 if your reverse proxy runs on this same host.
+      - "${HOST_BIND:-0.0.0.0}:${HOST_PORT:-3000}:3000"
     volumes:
       - ./data:/data

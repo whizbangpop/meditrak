@@ -6,6 +6,15 @@ const helmet = require('helmet');
 const cookieSession = require('cookie-session');
 const db = require('./db');
 const util = require('./util');
+
+// Content hash of the stylesheet + script, appended as ?v= so browsers and the
+// service worker always fetch the new files after an update
+const assetVersion = crypto
+  .createHash('sha1')
+  .update(require('fs').readFileSync(path.join(__dirname, '..', 'public', 'css', 'app.css')))
+  .update(require('fs').readFileSync(path.join(__dirname, '..', 'public', 'js', 'app.js')))
+  .digest('hex')
+  .slice(0, 10);
 const push = require('./push');
 
 const app = express();
@@ -62,7 +71,7 @@ app.use((req, res, next) => {
   req.flash = (type, message) => {
     req.session.flash = { type, message };
   };
-  Object.assign(res.locals, { user: null, profile: null, title: null, currentPath: req.path, u: util, tz: 'UTC' });
+  Object.assign(res.locals, { user: null, profile: null, title: null, currentPath: req.path, u: util, tz: 'UTC', assetV: assetVersion });
   req.tz = 'UTC';
 
   if (req.session.userId) {

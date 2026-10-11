@@ -1,5 +1,5 @@
 /* Meditrak service worker: offline shell, caching of static assets, push reminders */
-const CACHE = 'meditrak-v3';
+const CACHE = 'meditrak-v4';
 const ASSETS = [
   '/offline.html',
   '/css/app.css',
@@ -42,19 +42,36 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(fetch(req).catch(() => caches.match('/offline.html')));
     return;
   }
-  // Static assets: stale-while-revalidate
-  if (/^\/(css|js|icons|fonts)\//.test(url.pathname) || url.pathname === '/manifest.webmanifest') {
+  // CSS, JS and the manifest change between releases: network first, cached copy only when offline.
+  // (Serving the cache first showed new pages with an old stylesheet after an update.)
+  if (/^\/(css|js)\//.test(url.pathname) || url.pathname === '/manifest.webmanifest') {
     event.respondWith(
-      caches.open(CACHE).then(async (cache) => {
-        const cached = await cache.match(req);
-        const network = fetch(req)
-          .then((res) => {
-            if (res.ok) cache.put(req, res.clone());
+      fetch(req)
+        .then((res) => {
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(url.pathname, copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match(url.pathname, { ignoreSearch: true }))
+    );
+    return;
+  }
+  // Fonts and icons never change in place: cache first
+  if (/^\/(icons|fonts)\//.test(url.pathname)) {
+    event.respondWith(
+      caches.match(req).then(
+        (hit) =>
+          hit ||
+          fetch(req).then((res) => {
+            if (res.ok) {
+              const copy = res.clone();
+              caches.open(CACHE).then((c) => c.put(req, copy));
+            }
             return res;
           })
-          .catch(() => cached);
-        return cached || network;
-      })
+      )
     );
   }
 });

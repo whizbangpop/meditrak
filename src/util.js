@@ -38,6 +38,17 @@ function fmtTime(iso, tz) {
   return DateTime.fromISO(iso, { zone: 'utc' }).setZone(tz || 'UTC').toFormat('HH:mm');
 }
 
+/** NHS numbers are conventionally shown 3-3-4 */
+function fmtNhs(v) {
+  const d = String(v || '').replace(/\D/g, '');
+  return d.length === 10 ? `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}` : v || '';
+}
+function fmtDob(d) {
+  if (!d) return '';
+  const dt = DateTime.fromISO(d);
+  return dt.isValid ? dt.toFormat('dd-LLL-yyyy').toUpperCase() : d;
+}
+
 function formName(med, n = 2) {
   if (med.form === 'vial') return 'ml';
   return Number(n) === 1 ? med.form : `${med.form}s`;
@@ -96,6 +107,8 @@ module.exports = {
   fmtDate,
   fmtDateTime,
   fmtTime,
+  fmtNhs,
+  fmtDob,
   formName,
   stockUnit,
   concUnit,

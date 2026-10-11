@@ -1,5 +1,5 @@
 /* Meditrak service worker: offline shell, caching of static assets, push reminders */
-const CACHE = 'meditrak-v2';
+const CACHE = 'meditrak-v3';
 const ASSETS = [
   '/offline.html',
   '/css/app.css',
@@ -10,6 +10,12 @@ const ASSETS = [
   '/icons/icon-512.png',
   '/icons/badge-72.png',
   '/fonts/outfit-latin-wght-normal.woff2',
+  '/fonts/ibm-plex-sans-latin-400-normal.woff2',
+  '/fonts/ibm-plex-sans-latin-600-normal.woff2',
+  '/fonts/ibm-plex-sans-condensed-latin-600-normal.woff2',
+  '/fonts/ibm-plex-sans-condensed-latin-700-normal.woff2',
+  '/fonts/ibm-plex-mono-latin-400-normal.woff2',
+  '/fonts/ibm-plex-mono-latin-600-normal.woff2',
 ];
 
 self.addEventListener('install', (event) => {

@@ -128,8 +128,8 @@ router.post('/medications/:id', (req, res) => {
 router.post('/medications/:id/archive', (req, res) => {
   const med = getMed(req, req.params.id);
   db.prepare('UPDATE medications SET archived = ? WHERE id = ?').run(med.archived ? 0 : 1, med.id);
-  req.flash('info', med.archived ? `${med.name} restored.` : `${med.name} archived — reminders stopped.`);
-  res.redirect(`/medications/${med.id}`);
+  req.flash('info', med.archived ? `${med.name} restarted.` : `${med.name} stopped — reminders turned off.`);
+  res.redirect(u.safeReturn(req.body.return_to, `/medications/${med.id}`));
 });
 
 router.post('/medications/:id/delete', (req, res) => {

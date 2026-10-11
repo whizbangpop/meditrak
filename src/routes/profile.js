@@ -37,9 +37,16 @@ router.post('/profile', (req, res) => {
     notes: str(b.notes),
     expiry_warning_days: num(b.expiry_warning_days) ?? 30,
     reminder_followup_minutes: num(b.reminder_followup_minutes) ?? 0,
+    nhs_number: str(b.nhs_number),
+    weight_kg: num(b.weight_kg),
+    gp_practice: str(b.gp_practice),
+    allergies: str(b.allergies),
   };
   const errors = [];
   if (!v.display_name) errors.push('Enter a display name.');
+  if (v.nhs_number && !/^[0-9 ]{6,14}$/.test(v.nhs_number)) errors.push('NHS / CHI number should be digits only.');
+  if (v.weight_kg !== null && !(v.weight_kg > 0 && v.weight_kg < 500)) errors.push('Weight must be in kg, between 0 and 500.');
+  if (v.allergies && v.allergies.length > 500) errors.push('Allergies must be under 500 characters.');
   if (!DateTime.now().setZone(v.timezone).isValid) errors.push('Choose a valid time zone.');
   if (v.date_of_birth && !isDate(v.date_of_birth)) errors.push('Date of birth is not a valid date.');
   if (!Number.isInteger(v.expiry_warning_days) || v.expiry_warning_days < 0 || v.expiry_warning_days > 365)
@@ -50,11 +57,15 @@ router.post('/profile', (req, res) => {
   if (errors.length) return render(res.status(400), { isSetup, values: v, error: errors.join(' ') });
 
   db.prepare(
-    `INSERT INTO profiles (user_id, display_name, timezone, date_of_birth, notes, expiry_warning_days, reminder_followup_minutes, updated_at)
-     VALUES (@user_id, @display_name, @timezone, @date_of_birth, @notes, @expiry_warning_days, @reminder_followup_minutes, @now)
+    `INSERT INTO profiles (user_id, display_name, timezone, date_of_birth, notes, expiry_warning_days, reminder_followup_minutes,
+       nhs_number, weight_kg, gp_practice, allergies, updated_at)
+     VALUES (@user_id, @display_name, @timezone, @date_of_birth, @notes, @expiry_warning_days, @reminder_followup_minutes,
+       @nhs_number, @weight_kg, @gp_practice, @allergies, @now)
      ON CONFLICT (user_id) DO UPDATE SET display_name = excluded.display_name, timezone = excluded.timezone,
        date_of_birth = excluded.date_of_birth, notes = excluded.notes, expiry_warning_days = excluded.expiry_warning_days,
-       reminder_followup_minutes = excluded.reminder_followup_minutes, updated_at = excluded.updated_at`
+       reminder_followup_minutes = excluded.reminder_followup_minutes, nhs_number = excluded.nhs_number,
+       weight_kg = excluded.weight_kg, gp_practice = excluded.gp_practice, allergies = excluded.allergies,
+       updated_at = excluded.updated_at`
   ).run({ ...v, user_id: req.user.id, now: new Date().toISOString() });
 
   req.flash('success', isSetup ? 'Profile created. Add your first medication to get started.' : 'Profile saved.');

@@ -97,14 +97,14 @@ function recordDose({ userId, med, scheduleId = null, scheduledFor = null, dose,
   })();
 }
 
-function recordSkip({ userId, med, scheduleId, scheduledFor, notes = null }) {
+function recordSkip({ userId, med, scheduleId, scheduledFor, reason = null, notes = null }) {
   const now = new Date().toISOString();
   return db
     .prepare(
-      `INSERT INTO dose_logs (user_id, medication_id, schedule_id, scheduled_for, status, dose, taken_at, notes, created_at)
-       VALUES (?, ?, ?, ?, 'skipped', NULL, ?, ?, ?)`
+      `INSERT INTO dose_logs (user_id, medication_id, schedule_id, scheduled_for, status, dose, taken_at, reason, notes, created_at)
+       VALUES (?, ?, ?, ?, 'skipped', NULL, ?, ?, ?, ?)`
     )
-    .run(userId, med.id, scheduleId, scheduledFor, now, notes, now).lastInsertRowid;
+    .run(userId, med.id, scheduleId, scheduledFor, now, reason, notes, now).lastInsertRowid;
 }
 
 /** Remove a log entry and put back any stock / disposables it used */

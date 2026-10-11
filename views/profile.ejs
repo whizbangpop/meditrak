@@ -7,16 +7,35 @@
 
 <form method="post" action="/profile" class="card stack">
   <%- csrf %>
-  <label>Display name
+  <h2 class="form-section">Your details</h2>
+  <p class="hint">Shown in the banner at the top of every page, so the chart is ready to show at appointments.</p>
+  <label>Name
     <input name="display_name" required maxlength="80" value="<%= values.display_name || '' %>">
   </label>
+  <div class="grid-2">
+    <label>Date of birth <span class="muted">(optional)</span>
+      <input type="date" name="date_of_birth" value="<%= values.date_of_birth || '' %>">
+    </label>
+    <label>NHS / CHI number <span class="muted">(optional)</span>
+      <input name="nhs_number" inputmode="numeric" maxlength="14" value="<%= values.nhs_number || '' %>">
+    </label>
+    <label>Weight <span class="muted">(optional)</span>
+      <span class="input-suffix"><input type="number" name="weight_kg" step="0.1" min="0" max="500" value="<%= values.weight_kg ?? '' %>"><span>kg</span></span>
+    </label>
+    <label>GP practice <span class="muted">(optional)</span>
+      <input name="gp_practice" maxlength="80" value="<%= values.gp_practice || '' %>">
+    </label>
+  </div>
+  <label>Allergies and reactions
+    <input name="allergies" maxlength="500" value="<%= values.allergies || '' %>" placeholder="e.g. Penicillin (rash), or None known">
+    <span class="hint">Shown in red on every page. Write "None known" if you have none.</span>
+  </label>
+
+  <h2 class="form-section">Reminders</h2>
   <label>Time zone
     <select name="timezone" <%= isSetup ? 'data-autodetect-tz' : '' %>>
       <% timezones.forEach(z => { %><option value="<%= z %>" <%= z === values.timezone ? 'selected' : '' %>><%= z %></option><% }) %>
     </select>
-  </label>
-  <label>Date of birth <span class="muted">(optional)</span>
-    <input type="date" name="date_of_birth" value="<%= values.date_of_birth || '' %>">
   </label>
   <div class="grid-2">
     <label>Warn about expiry
@@ -26,7 +45,7 @@
       <span class="input-suffix"><input type="number" name="reminder_followup_minutes" min="0" max="1440" value="<%= values.reminder_followup_minutes ?? 30 %>"><span>min after (0 = off)</span></span>
     </label>
   </div>
-  <label>Notes <span class="muted">(allergies, GP, pharmacy…)</span>
+  <label>Notes <span class="muted">(pharmacy, consultant, anything else)</span>
     <textarea name="notes" rows="3"><%= values.notes || '' %></textarea>
   </label>
   <button class="btn btn-primary"><%= isSetup ? 'Create profile' : 'Save profile' %></button>

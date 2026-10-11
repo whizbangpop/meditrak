@@ -5,34 +5,61 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title><%= title ? title + ' · Meditrak' : 'Meditrak' %></title>
   <link rel="manifest" href="/manifest.webmanifest">
-  <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#0A0A0A" media="(prefers-color-scheme: dark)">
-  <link rel="preload" href="/fonts/outfit-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <meta name="theme-color" content="#1f3a47" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b2a35" media="(prefers-color-scheme: dark)">
+  <link rel="preload" href="/fonts/ibm-plex-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/ibm-plex-sans-condensed-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/ibm-plex-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Meditrak">
   <meta name="csrf-token" content="<%= csrfToken %>">
   <link rel="stylesheet" href="/css/app.css">
   <script src="/js/app.js" defer></script>
 </head>
 <body>
-<header class="topbar">
-  <a class="brand" href="/" aria-label="Meditrak home"><%- include('logo') %></a>
-  <% if (user) { %>
-    <nav class="topnav">
-      <% if (profile) { %>
-        <a href="/" class="<%= currentPath === '/' ? 'active' : '' %>">Today</a>
-        <a href="/medications" class="<%= currentPath.startsWith('/medications') || currentPath.startsWith('/stock') || currentPath.startsWith('/schedules') ? 'active' : '' %>">Medications</a>
+<header class="band">
+  <div class="band-top">
+    <a class="brand" href="/" aria-label="Meditrak home"><%- include('logo') %></a>
+    <% if (user && profile) { %>
+      <nav class="topnav" aria-label="Main">
+        <a href="/" class="<%= currentPath === '/' ? 'active' : '' %>">Chart</a>
+        <a href="/medications" class="<%= currentPath.startsWith('/medications') || currentPath.startsWith('/stock') || currentPath.startsWith('/schedules') ? 'active' : '' %>">Medicines</a>
         <a href="/disposables" class="<%= currentPath.startsWith('/disposables') ? 'active' : '' %>">Supplies</a>
         <a href="/history" class="<%= currentPath.startsWith('/history') ? 'active' : '' %>">History</a>
         <a href="/profile" class="<%= currentPath.startsWith('/profile') ? 'active' : '' %>">Profile</a>
-      <% } %>
-    </nav>
+      </nav>
+    <% } %>
+  </div>
+  <% if (user && profile) { %>
+    <div class="band-pt">
+      <div class="pt-id">
+        <p class="pt-name"><%= profile.display_name %></p>
+        <div class="pt-meta">
+          <% if (profile.date_of_birth) { %><span><b>DOB</b><%= u.fmtDob(profile.date_of_birth) %></span><% } %>
+          <% if (profile.nhs_number) { %><span><b>NHS / CHI</b><%= u.fmtNhs(profile.nhs_number) %></span><% } %>
+          <% if (profile.weight_kg) { %><span><b>Weight</b><%= u.fmtNum(profile.weight_kg, 1) %> kg</span><% } %>
+          <% if (profile.gp_practice) { %><span><b>GP</b><%= profile.gp_practice %></span><% } %>
+          <% if (!profile.date_of_birth && !profile.nhs_number && !profile.weight_kg && !profile.gp_practice) { %>
+            <span class="pt-hint">Add your details so the chart is ready to show at appointments.</span>
+          <% } %>
+        </div>
+      </div>
+      <a class="btn-band" href="/profile">Edit details</a>
+    </div>
   <% } %>
 </header>
 <main class="container">
+<% if (user && profile) { %>
+  <% if (profile.allergies) { %>
+    <div class="allergy" role="note"><b>Allergies</b><span><%= profile.allergies %></span></div>
+  <% } else { %>
+    <a class="allergy allergy-unknown" href="/profile"><b>Allergies</b><span>Not recorded. Add them in your details, or note "None known".</span></a>
+  <% } %>
+<% } %>
 <% if (flash) { %>
   <div class="flash flash-<%= flash.type %>" role="status"><%= flash.message %></div>
 <% } %>

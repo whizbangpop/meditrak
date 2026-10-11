@@ -1,7 +1,7 @@
 <%- include('../partials/header') %>
 <div class="page-head">
   <div>
-    <h1><%= med.name %> <% if (med.archived) { %><span class="badge">archived</span><% } %></h1>
+    <h1><%= med.name %> <% if (med.archived) { %><span class="badge">stopped</span><% } %></h1>
     <span class="muted">
       <%= med.form === 'vial' ? 'Vial · typically ' + u.fmtNum(med.strength, 3) + ' ' + u.concUnit(med) : u.fmtNum(med.strength, 3) + ' ' + med.strength_unit + ' per ' + med.form %>
       · default dose <%= u.doseText(med, med.default_dose, sum.currentConcentration) %>
@@ -130,7 +130,7 @@
 </section>
 
 <section class="section row-actions">
-  <form method="post" action="/medications/<%= med.id %>/archive"><%- csrf %><button class="btn btn-ghost"><%= med.archived ? 'Restore medication' : 'Archive (stop reminders)' %></button></form>
+  <form method="post" action="/medications/<%= med.id %>/archive"><%- csrf %><button class="btn btn-ghost"><%= med.archived ? 'Restart medicine' : 'Stop medicine' %></button></form>
   <form method="post" action="/medications/<%= med.id %>/delete" data-confirm="Delete <%= med.name %> including all stock, schedules and history? This cannot be undone."><%- csrf %><button class="btn btn-ghost danger-text">Delete</button></form>
 </section>
 <%- include('../partials/footer') %>

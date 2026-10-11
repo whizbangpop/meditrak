@@ -157,4 +157,15 @@ CREATE TABLE IF NOT EXISTS notification_log (
 );
 `);
 
+// ---- Additive migrations for databases created by earlier versions ----
+function addColumn(table, column, definition) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name);
+  if (!cols.includes(column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+}
+addColumn('profiles', 'nhs_number', 'TEXT');
+addColumn('profiles', 'weight_kg', 'REAL');
+addColumn('profiles', 'gp_practice', 'TEXT');
+addColumn('profiles', 'allergies', 'TEXT');
+addColumn('dose_logs', 'reason', 'TEXT');
+
 module.exports = db;

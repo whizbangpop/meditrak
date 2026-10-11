@@ -1,11 +1,11 @@
 <%- include('../partials/header') %>
 <div class="page-head">
-  <h1><%= showArchived ? 'Archived medications' : 'Medications' %></h1>
+  <h1><%= showArchived ? 'Stopped medicines' : 'Medicines' %></h1>
   <a class="btn btn-primary" href="/medications/new">+ Add</a>
 </div>
 
 <% if (!meds.length) { %>
-  <section class="card muted"><%= showArchived ? 'No archived medications.' : 'No medications yet.' %></section>
+  <section class="card muted"><%= showArchived ? 'No stopped medicines.' : 'No medicines yet.' %></section>
 <% } %>
 <section class="list">
   <% meds.forEach(m => { %>
@@ -27,5 +27,5 @@
     </a>
   <% }) %>
 </section>
-<p class="center"><a href="/medications<%= showArchived ? '' : '?archived=1' %>" class="muted small"><%= showArchived ? '← Back to current medications' : 'Show archived medications' %></a></p>
+<p class="center"><a href="/medications<%= showArchived ? '' : '?archived=1' %>" class="muted small"><%= showArchived ? '← Back to current medicines' : 'Show stopped medicines' %></a></p>
 <%- include('../partials/footer') %>

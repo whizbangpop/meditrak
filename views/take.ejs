@@ -1,65 +1,103 @@
 <%- include('partials/header') %>
-<div class="page-head"><h1>Log <%= med.name %></h1></div>
+<% const dueText = scheduledAt ? 'due ' + scheduledAt.toFormat('HH:mm') + ' · ' + scheduledAt.toFormat('ccc d LLL') : (schedule ? 'when needed' : 'unscheduled dose'); %>
+<section class="sheet">
+  <h1 class="sheet-title"><%= med.name %></h1>
+  <div class="sheet-sub"><%= u.doseText(med, dose, concentration) %> · <%= dueText %></div>
 
-<form method="post" action="/doses/take" class="card stack" id="take-form"
-      data-form="<%= med.form %>" data-strength="<%= med.strength %>" data-unit="<%= med.strength_unit %>">
-  <%- csrf %>
-  <% if (schedule) { %>
-    <input type="hidden" name="schedule_id" value="<%= schedule.id %>">
-    <% if (scheduledFor) { %><input type="hidden" name="scheduled_for" value="<%= scheduledFor %>"><% } %>
-    <p class="muted">
-      <%= u.describeSchedule(schedule) %><% if (scheduledFor) { %> · due <%= u.fmtDateTime(scheduledFor, tz) %><% } %>
-    </p>
+  <% if (existing) { %>
+    <div class="alert alert-grey">
+      Recorded as <b><%= existing.status === 'taken' ? 'taken at ' + u.fmtTime(existing.taken_at, tz) + ' · ' + u.fmtNum(existing.dose, 3) + ' ' + med.strength_unit : 'not taken: ' + (existing.reason || 'no reason') %></b>
+      <% if (existing.notes) { %><br><span class="small">“<%= existing.notes %>”</span><% } %>
+    </div>
+    <div class="actions">
+      <form method="post" action="/doses/<%= existing.id %>/undo" data-confirm="Clear this entry? Any stock and supplies it used will be put back.">
+        <%- csrf %><input type="hidden" name="return_to" value="<%= returnTo %>">
+        <button class="btn">Clear entry</button>
+      </form>
+      <a class="btn btn-ghost" href="<%= returnTo %>">Close</a>
+    </div>
+
+  <% } else if (future) { %>
+    <div class="alert alert-amber">This dose is on a future day. You can only record doses up to today.</div>
+    <div class="actions"><a class="btn" href="<%= returnTo %>">Close</a></div>
+
   <% } else { %>
-    <input type="hidden" name="medication_id" value="<%= med.id %>">
-    <p class="muted">Unscheduled dose</p>
-  <% } %>
-  <input type="hidden" name="return_to" value="<%= returnTo %>">
+    <form method="post" action="/doses/take" class="stack" id="take-form"
+          data-form="<%= med.form %>" data-strength="<%= med.strength %>" data-unit="<%= med.strength_unit %>" data-conc="<%= concentration || '' %>">
+      <%- csrf %>
+      <% if (schedule) { %>
+        <input type="hidden" name="schedule_id" value="<%= schedule.id %>">
+        <% if (scheduledFor) { %><input type="hidden" name="scheduled_for" value="<%= scheduledFor %>"><% } %>
+      <% } else { %>
+        <input type="hidden" name="medication_id" value="<%= med.id %>">
+      <% } %>
+      <input type="hidden" name="return_to" value="<%= returnTo %>">
 
-  <label>Dose
-    <span class="input-suffix">
-      <input type="number" name="dose" step="any" min="0" required value="<%= dose %>" data-dose-input>
-      <span><%= med.strength_unit %></span>
-    </span>
-    <span class="hint" data-dose-preview></span>
-  </label>
-
-  <label>Take from
-    <select name="stock_item_id" data-stock-select>
-      <option value="">Automatic (opened first, then soonest expiry)</option>
-      <% items.forEach(i => { %>
-        <option value="<%= i.id %>" data-conc="<%= i.concentration || '' %>">
-          <%= i.batch ? 'Batch ' + i.batch : 'No batch' %> · exp <%= u.fmtDate(i.expiry_date) %> · <%= u.stockItemText(med, i) %>
-        </option>
-      <% }) %>
-    </select>
-    <% if (!items.length) { %><span class="hint warn-text">No usable stock recorded — the dose will be logged but nothing deducted.</span><% } %>
-  </label>
-
-  <label>Time taken
-    <input type="datetime-local" name="taken_at" value="<%= takenAtLocal %>" required>
-  </label>
-
-  <% if (disposables.length) { %>
-    <fieldset class="stack">
-      <legend>Supplies used</legend>
-      <% disposables.forEach(d => { %>
-        <label class="disp-row">
-          <span class="grow"><%= d.name %> <span class="muted small">(<%= u.fmtNum(d.quantity) %> <%= d.unit %> left)</span></span>
-          <input type="number" name="disp_<%= d.id %>" min="0" step="any" value="<%= d.quantity_per_dose ?? 0 %>" class="qty">
+      <div class="grid-2">
+        <label>Time taken
+          <input type="datetime-local" name="taken_at" value="<%= takenAtLocal %>" required>
         </label>
-      <% }) %>
-      <span class="hint">Linked supplies are pre-filled. Change any number, or set to 0.</span>
-    </fieldset>
+        <label>Dose given
+          <span class="input-suffix">
+            <input type="number" name="dose" step="any" min="0" required value="<%= dose %>" data-dose-input>
+            <span><%= med.strength_unit %></span>
+          </span>
+          <span class="hint" data-dose-preview></span>
+        </label>
+      </div>
+
+      <label>Take from
+        <select name="stock_item_id" data-stock-select>
+          <option value="">Automatic (opened first, then soonest expiry)</option>
+          <% items.forEach(i => { %>
+            <option value="<%= i.id %>" data-conc="<%= i.concentration || '' %>">
+              <%= i.batch ? 'Batch ' + i.batch : 'No batch' %> · exp <%= u.fmtDate(i.expiry_date) %> · <%= u.stockItemText(med, i) %>
+            </option>
+          <% }) %>
+        </select>
+        <% if (!items.length) { %><span class="hint warn-text">No usable stock recorded — the dose will be recorded but nothing deducted.</span><% } %>
+      </label>
+
+      <% if (disposables.length) { %>
+        <fieldset class="stack-tight">
+          <legend>Supplies used</legend>
+          <% disposables.forEach(d => { %>
+            <label class="disp-row">
+              <span class="grow"><%= d.name %> <span class="muted small">(<%= u.fmtNum(d.quantity) %> <%= d.unit %> left)</span></span>
+              <input type="number" name="disp_<%= d.id %>" min="0" step="any" value="<%= d.quantity_per_dose ?? 0 %>" class="qty" aria-label="<%= d.name %> used">
+            </label>
+          <% }) %>
+          <span class="hint">Linked supplies are pre-filled. Change any number, or set it to 0.</span>
+        </fieldset>
+      <% } %>
+
+      <label>Notes <span class="muted">(optional — injection site, side effects…)</span>
+        <input name="notes" maxlength="300">
+      </label>
+
+      <div class="actions">
+        <button class="btn btn-primary">Mark as taken</button>
+        <a class="btn btn-ghost" href="<%= returnTo %>">Cancel</a>
+      </div>
+    </form>
+
+    <% if (schedule && scheduledFor) { %>
+      <form method="post" action="/doses/skip" class="omit-form">
+        <%- csrf %>
+        <input type="hidden" name="schedule_id" value="<%= schedule.id %>">
+        <input type="hidden" name="scheduled_for" value="<%= scheduledFor %>">
+        <input type="hidden" name="return_to" value="<%= returnTo %>">
+        <fieldset>
+          <legend>Or record as not taken</legend>
+          <div class="reasons">
+            <% reasons.forEach((r, i) => { %>
+              <label class="reason"><input type="radio" name="reason" value="<%= r %>" required><span><%= r %></span></label>
+            <% }) %>
+          </div>
+        </fieldset>
+        <div class="actions"><button class="btn">Record not taken</button></div>
+      </form>
+    <% } %>
   <% } %>
-
-  <label>Notes <span class="muted">(optional — injection site, side effects…)</span>
-    <textarea name="notes" rows="2"></textarea>
-  </label>
-
-  <div class="row-actions">
-    <button class="btn btn-primary">Log as taken</button>
-    <a class="btn btn-ghost" href="<%= returnTo %>">Cancel</a>
-  </div>
-</form>
+</section>
 <%- include('partials/footer') %>

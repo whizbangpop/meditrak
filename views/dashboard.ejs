@@ -1,100 +1,150 @@
 <%- include('partials/header') %>
-<div class="page-head">
-  <div>
-    <h1>Today</h1>
-    <span class="muted"><%= now.toFormat('cccc d LLLL') %></span>
-  </div>
-</div>
+<h1 class="sr-only">Medicines chart</h1>
 
 <% if (alerts.length) { %>
-  <section class="alerts">
+  <section class="alerts" aria-label="Stock alerts">
     <% alerts.forEach(a => { %><a class="alert alert-<%= a.level %>" href="<%= a.href %>"><%= a.text %></a><% }) %>
   </section>
 <% } %>
 
-<% if (!meds.length) { %>
-  <section class="card empty">
-    <p>You haven't added any medications yet.</p>
-    <a class="btn btn-primary" href="/medications/new">Add your first medication</a>
-  </section>
-<% } %>
+<div class="daybar">
+  <nav class="daynav" aria-label="Chart day">
+    <a class="daybtn" href="<%= prevUrl %>" aria-label="Previous day">‹</a>
+    <div class="daylabel" aria-live="polite"><%= dayLabel %></div>
+    <a class="daybtn" href="<%= nextUrl %>" aria-label="Next day">›</a>
+    <% if (date !== todayKey) { %><a class="daybtn" href="<%= todayUrl %>">Today</a><% } %>
+  </nav>
+  <% if (counts.total) { %>
+    <div class="daystats">
+      <span class="pill given"><%= counts.given %>/<%= counts.total %> taken</span>
+      <% if (counts.due) { %><span class="pill due"><%= counts.due %> due</span><% } %>
+      <% if (counts.late) { %><span class="pill late"><%= counts.late %> <%= isPast ? 'not recorded' : 'overdue' %></span><% } %>
+    </div>
+  <% } %>
+</div>
 
-<% if (doses.length) { %>
-  <section class="list">
-    <% doses.forEach(d => { %>
-      <article class="card dose dose-<%= d.status %>">
-        <div class="dose-time">
-          <%= d.at.toFormat('HH:mm') %>
-          <% if (d.earlier) { %><small><%= d.at.toFormat('ccc') %></small><% } %>
-        </div>
-        <div class="dose-main">
-          <a href="/medications/<%= d.med.id %>" class="dose-name"><%= d.med.name %></a>
-          <div class="muted small"><%= d.doseText %></div>
-          <% if (d.log) { %>
-            <span class="badge badge-<%= d.log.status %>"><%= d.log.status === 'taken' ? 'Taken ' + u.fmtTime(d.log.taken_at, tz) : 'Skipped' %></span>
-            <% if (d.log.shortfall > 0) { %><span class="badge badge-overdue">stock short</span><% } %>
-          <% } else { %>
-            <span class="badge badge-<%= d.status %>"><%= d.status %></span>
-          <% } %>
-        </div>
-        <div class="dose-actions">
-          <% if (d.log) { %>
-            <form method="post" action="/doses/<%= d.log.id %>/undo" data-confirm="Undo this entry? Any stock it used will be put back.">
-              <%- csrf %><input type="hidden" name="return_to" value="/">
-              <button class="btn btn-ghost btn-sm">Undo</button>
-            </form>
-          <% } else { %>
-            <form method="post" action="/doses/take">
-              <%- csrf %>
-              <input type="hidden" name="schedule_id" value="<%= d.schedule.id %>">
-              <input type="hidden" name="scheduled_for" value="<%= d.key %>">
-              <input type="hidden" name="quick" value="1">
-              <input type="hidden" name="return_to" value="/">
-              <button class="btn btn-primary btn-sm">Take</button>
-            </form>
-            <a class="btn btn-ghost btn-sm" href="/doses/take?schedule_id=<%= d.schedule.id %>&scheduled_for=<%= encodeURIComponent(d.key) %>&return_to=/">Adjust</a>
-            <form method="post" action="/doses/skip">
-              <%- csrf %>
-              <input type="hidden" name="schedule_id" value="<%= d.schedule.id %>">
-              <input type="hidden" name="scheduled_for" value="<%= d.key %>">
-              <input type="hidden" name="return_to" value="/">
-              <button class="btn btn-ghost btn-sm">Skip</button>
-            </form>
-          <% } %>
-        </div>
-      </article>
-    <% }) %>
-  </section>
-<% } else if (meds.length) { %>
-  <section class="card muted">No scheduled doses today.</section>
-<% } %>
+<div class="tabs" role="tablist">
+  <a class="tab" role="tab" href="<%= tabUrl('regular') %>" aria-selected="<%= tab === 'regular' %>">Regular<span class="n"><%= regular.length %></span></a>
+  <a class="tab" role="tab" href="<%= tabUrl('prn') %>" aria-selected="<%= tab === 'prn' %>">When needed<span class="n"><%= prn.length %></span></a>
+  <a class="tab" role="tab" href="<%= tabUrl('stopped') %>" aria-selected="<%= tab === 'stopped' %>">Stopped<span class="n"><%= stopped.length %></span></a>
+</div>
 
-<% if (prn.length) { %>
-  <h2>As needed</h2>
-  <section class="list">
-    <% prn.forEach(p => { %>
-      <article class="card dose">
-        <div class="dose-main">
-          <a href="/medications/<%= p.med.id %>" class="dose-name"><%= p.med.name %></a>
-          <div class="muted small"><%= p.doseText %><% if (p.schedule.notes) { %> · <%= p.schedule.notes %><% } %></div>
+<div class="chart-list">
+<% if (!meds.length && !stopped.length) { %>
+  <div class="empty">
+    <h2>No medicines on your chart yet</h2>
+    <p>Add each medicine with its strength, then the boxes or vials you have and the times you take it. Regular medicines get a timed row you tick off through the day; when-needed medicines keep a log of each dose.</p>
+    <a class="btn btn-primary" href="/medications/new">+ Add your first medicine</a>
+  </div>
+
+<% } else if (tab === 'regular') { %>
+  <% if (!regular.length) { %><div class="empty"><p>No regular medicines.</p></div><% } %>
+  <% regular.forEach(r => { %>
+    <article class="med">
+      <div class="med-head">
+        <div class="grow">
+          <h2 class="med-name"><a href="/medications/<%= r.med.id %>"><%= r.med.name %></a></h2>
+          <% r.rx.forEach(line => { %><div class="med-rx"><%= line %></div><% }) %>
+          <% if (r.med.instructions) { %><div class="med-note"><%= r.med.instructions %></div><% } %>
         </div>
-        <div class="dose-actions">
-          <a class="btn btn-sm" href="/doses/take?schedule_id=<%= p.schedule.id %>&return_to=/">Log dose</a>
+        <a class="edit" href="/medications/<%= r.med.id %>">Edit</a>
+      </div>
+      <% if (r.noSchedule) { %>
+        <div class="slots"><span class="none">No schedule yet. <a href="/medications/<%= r.med.id %>/schedules/new">Add dose times</a></span></div>
+      <% } else if (!r.slots.length) { %>
+        <div class="slots"><span class="none">No doses due on this day</span></div>
+      <% } else { %>
+        <div class="slots">
+          <% r.slots.forEach(s => {
+               const href = '/doses/take?schedule_id=' + s.schedule.id + '&scheduled_for=' + encodeURIComponent(s.key) + '&return_to=' + encodeURIComponent(returnTo);
+               const aria = r.med.name + ' ' + s.at.toFormat('HH:mm') + ': ' + s.label; %>
+            <a class="slot <%= s.status %>" href="<%= href %>" aria-label="<%= aria %>">
+              <span class="t"><%= s.at.toFormat('HH:mm') %></span>
+              <% if (r.showDose) { %><span class="dz"><%= u.fmtNum(s.dose, 3) %> <%= r.med.strength_unit %></span><% } %>
+              <span class="s"><%= s.label %></span>
+            </a>
+          <% }) %>
         </div>
-      </article>
-    <% }) %>
-  </section>
+      <% } %>
+      <% if (!r.noSchedule) { %>
+        <div class="week">
+          <span class="lab">Last 7 days</span>
+          <% r.week.forEach(w => { %><span class="d <%= w.cls %>" title="<%= w.title %>"><span class="sr-only"><%= w.title %></span></span><% }) %>
+        </div>
+      <% } %>
+    </article>
+  <% }) %>
+
+<% } else if (tab === 'prn') { %>
+  <% if (!prn.length) { %>
+    <div class="empty"><p>No when-needed medicines. Add an <em>as needed</em> schedule to a medicine to see it here.</p></div>
+  <% } %>
+  <% prn.forEach(p => { %>
+    <article class="med">
+      <div class="med-head">
+        <div class="grow">
+          <h2 class="med-name"><a href="/medications/<%= p.med.id %>"><%= p.med.name %></a></h2>
+          <% p.rx.forEach(line => { %><div class="med-rx"><%= line %></div><% }) %>
+          <% if (p.med.instructions) { %><div class="med-note"><%= p.med.instructions %></div><% } %>
+        </div>
+        <a class="edit" href="/medications/<%= p.med.id %>">Edit</a>
+      </div>
+      <div class="prn-log">
+        <% if (!p.entries.length) { %><span class="none">No doses recorded this day</span><% } %>
+        <% p.entries.forEach(e => { %>
+          <form method="post" action="/doses/<%= e.id %>/undo" data-confirm="Remove the <%= u.fmtTime(e.taken_at, tz) %> dose? Any stock it used will be put back.">
+            <%- csrf %><input type="hidden" name="return_to" value="<%= returnTo %>">
+            <button class="entry" aria-label="Dose at <%= u.fmtTime(e.taken_at, tz) %>. Remove"><%= u.fmtTime(e.taken_at, tz) %><% if (e.dose !== p.schedule.dose) { %> · <%= u.fmtNum(e.dose, 3) %> <%= p.med.strength_unit %><% } %></button>
+          </form>
+        <% }) %>
+        <% if (!isFuture) { %>
+          <a class="btn btn-primary btn-sm push-right" href="/doses/take?schedule_id=<%= p.schedule.id %>&return_to=<%= encodeURIComponent(returnTo) %>">Record dose</a>
+        <% } %>
+      </div>
+    </article>
+  <% }) %>
+
+<% } else { %>
+  <% if (!stopped.length) { %><div class="empty"><p>No stopped medicines.</p></div><% } %>
+  <% stopped.forEach(m => { %>
+    <article class="med">
+      <div class="med-head">
+        <div class="grow">
+          <h2 class="med-name"><a href="/medications/<%= m.id %>"><%= m.name %></a></h2>
+          <div class="med-rx"><%= m.form === 'vial' ? u.fmtNum(m.strength, 3) + ' ' + u.concUnit(m) + ' vial' : u.fmtNum(m.strength, 3) + ' ' + m.strength_unit + ' ' + m.form %></div>
+        </div>
+      </div>
+      <div class="prn-log">
+        <span class="none">Stopped — no reminders</span>
+        <form method="post" action="/medications/<%= m.id %>/archive" class="push-right">
+          <%- csrf %><input type="hidden" name="return_to" value="<%= tabUrl('regular') %>">
+          <button class="btn btn-sm">Restart</button>
+        </form>
+      </div>
+    </article>
+  <% }) %>
 <% } %>
+</div>
 
 <% if (meds.length) { %>
-  <form method="get" action="/doses/take" class="card inline-form">
-    <label class="grow">Log an unscheduled dose
-      <select name="medication_id">
+  <div class="add-row">
+    <a class="btn btn-primary" href="/medications/new">+ Add medicine</a>
+    <form method="get" action="/doses/take" class="inline-form">
+      <label class="sr-only" for="unsched">Medicine for an unscheduled dose</label>
+      <select name="medication_id" id="unsched">
         <% meds.forEach(m => { %><option value="<%= m.id %>"><%= m.name %></option><% }) %>
       </select>
-    </label>
-    <input type="hidden" name="return_to" value="/">
-    <button class="btn">Continue</button>
-  </form>
+      <input type="hidden" name="return_to" value="<%= returnTo %>">
+      <button class="btn">Record extra dose</button>
+    </form>
+  </div>
 <% } %>
+
+<div class="legend" aria-label="Key">
+  <span><i class="k given"></i>Taken</span>
+  <span><i class="k due"></i>Due now</span>
+  <span><i class="k late"></i>Overdue / not recorded</span>
+  <span><i class="k omitted"></i>Not taken (reason given)</span>
+</div>
+<p class="foot">A personal record only. It doesn't check doses or interactions. Follow the instructions from your prescriber or pharmacist, and ask them if anything on this chart doesn't match.</p>
 <%- include('partials/footer') %>

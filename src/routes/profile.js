@@ -89,6 +89,11 @@ router.get('/profile/export', (req, res) => {
       transactions: db.prepare('SELECT * FROM disposable_transactions WHERE disposable_id = ?').all(d.id),
     })),
     dose_logs: db.prepare('SELECT * FROM dose_logs WHERE user_id = ? ORDER BY taken_at').all(uid),
+    blood_test_types: db.prepare('SELECT * FROM blood_test_types WHERE user_id = ?').all(uid),
+    blood_tests: db.prepare('SELECT * FROM blood_tests WHERE user_id = ? ORDER BY taken_on').all(uid).map((b) => ({
+      ...b,
+      results: db.prepare('SELECT type_id, value FROM blood_test_results WHERE blood_test_id = ?').all(b.id),
+    })),
   };
   res.setHeader('Content-Disposition', `attachment; filename="meditrak-export-${new Date().toISOString().slice(0, 10)}.json"`);
   res.json(data);

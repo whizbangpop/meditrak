@@ -1,0 +1,33 @@
+<%- include('../partials/header') %>
+<div class="page-head"><h1><%= title %></h1></div>
+<% if (typeof error !== 'undefined' && error) { %><div class="flash flash-error"><%= error %></div><% } %>
+
+<form method="post" action="<%= isNew ? '/bloods/types' : '/bloods/types/' + t.id %>" class="card stack">
+  <%- csrf %>
+  <% if (returnTo) { %><input type="hidden" name="return_to" value="<%= returnTo %>"><% } %>
+  <div class="grid-2">
+    <label>Name
+      <input name="name" required maxlength="120" value="<%= values.name || '' %>" placeholder="e.g. Haemoglobin, HbA1c, TSH">
+    </label>
+    <label>Unit <span class="muted">(optional)</span>
+      <input name="unit" maxlength="30" value="<%= values.unit || '' %>" placeholder="e.g. g/L, mmol/mol, mU/L">
+    </label>
+  </div>
+  <div class="grid-2">
+    <label>Minimum <span class="muted">(optional)</span>
+      <input type="number" name="range_min" step="any" inputmode="decimal" value="<%= values.range_min ?? '' %>">
+    </label>
+    <label>Maximum <span class="muted">(optional)</span>
+      <input type="number" name="range_max" step="any" inputmode="decimal" value="<%= values.range_max ?? '' %>">
+    </label>
+  </div>
+  <p class="hint">The normal range is drawn as marker lines on the chart. Leave either side blank if there is no limit.</p>
+  <label>Notes <span class="muted">(optional)</span>
+    <textarea name="notes" rows="2"><%= values.notes || '' %></textarea>
+  </label>
+  <div class="row-actions">
+    <button class="btn btn-primary"><%= isNew ? 'Add test type' : 'Save' %></button>
+    <a class="btn btn-ghost" href="<%= isNew ? (returnTo || '/bloods/types') : '/bloods/types/' + t.id %>">Cancel</a>
+  </div>
+</form>
+<%- include('../partials/footer') %>

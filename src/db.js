@@ -138,6 +138,39 @@ CREATE TABLE IF NOT EXISTS disposable_transactions (
   created_at TEXT NOT NULL
 );
 
+-- Blood test types are user-defined: name, unit and an optional reference range
+CREATE TABLE IF NOT EXISTS blood_test_types (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  unit TEXT,
+  range_min REAL,
+  range_max REAL,
+  notes TEXT,
+  archived INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+CREATE INDEX IF NOT EXISTS ix_btt_user ON blood_test_types(user_id);
+
+-- One row per blood draw; its results are recorded together
+CREATE TABLE IF NOT EXISTS blood_tests (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  taken_on TEXT NOT NULL,
+  notes TEXT,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+CREATE INDEX IF NOT EXISTS ix_bt_user ON blood_tests(user_id, taken_on);
+
+CREATE TABLE IF NOT EXISTS blood_test_results (
+  id INTEGER PRIMARY KEY,
+  blood_test_id INTEGER NOT NULL REFERENCES blood_tests(id) ON DELETE CASCADE,
+  type_id INTEGER NOT NULL REFERENCES blood_test_types(id) ON DELETE CASCADE,
+  value REAL NOT NULL,
+  UNIQUE (blood_test_id, type_id)
+);
+CREATE INDEX IF NOT EXISTS ix_btr_type ON blood_test_results(type_id);
+
 CREATE TABLE IF NOT EXISTS push_subscriptions (
   id INTEGER PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

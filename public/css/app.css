@@ -270,6 +270,40 @@ ul.plain { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
 details summary { cursor: pointer; font: 600 .9rem var(--f-label); letter-spacing: .04em; text-transform: uppercase; }
 details[open] summary { margin-bottom: 12px; }
 
+/* ---- Blood tests ---- */
+.blood-card { display: grid; gap: 8px; }
+.blood-card > p { margin: 0; }
+.blood-head { display: flex; gap: 12px; align-items: flex-start; }
+.result-pill.low, .result-pill.high { background: var(--late-bg); border-color: var(--late); }
+.result-pill.low strong, .result-pill.high strong { color: var(--late); }
+.flag-low, .flag-high { color: var(--late); font-weight: 600; }
+.blood-chart { min-height: 170px; margin: 0 -4px; }
+.blood-chart-lg { min-height: 220px; }
+.bchart { display: block; overflow: visible; }
+.bc-grid { stroke: var(--line); stroke-width: 1; }
+.bc-tick { font: 11px var(--f-data); fill: var(--muted); }
+.bc-band { fill: var(--given-bg); opacity: .7; }
+.bc-limit { stroke: var(--given); stroke-width: 1.5; stroke-dasharray: 6 4; }
+.bc-limit-label { font: 600 10.5px var(--f-label); letter-spacing: .06em; text-transform: uppercase; fill: var(--given); }
+.bc-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.bc-pt circle { fill: var(--panel); stroke: var(--accent); stroke-width: 2; }
+.bc-pt.out circle { fill: var(--late); stroke: var(--late); }
+.bc-pt circle.bc-hit { fill: transparent; stroke: none; cursor: default; }
+.results { display: grid; gap: 8px; }
+.result-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.result-row select { grid-column: 1 / -1; }
+.result-row + .result-row { border-top: 1px dashed var(--line); padding-top: 8px; }
+.result-row .input-suffix > span:empty { display: none; }
+@media (min-width: 560px) {
+  .result-row { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto; }
+  .result-row select { grid-column: auto; }
+  .result-row + .result-row { border-top: 0; padding-top: 0; }
+}
+.results-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.results-table th { text-align: left; font: 600 .72rem var(--f-label); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 0 8px 6px 0; border-bottom: 2px solid var(--line); }
+.results-table td { padding: 8px 8px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.results-table tr:last-child td { border-bottom: 0; }
+
 /* ---- Badges ---- */
 .badge {
   display: inline-block; font: 600 .7rem var(--f-label); letter-spacing: .08em; text-transform: uppercase;

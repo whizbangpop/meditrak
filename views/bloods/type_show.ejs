@@ -1,0 +1,41 @@
+<%- include('../partials/header') %>
+<div class="page-head">
+  <div>
+    <h1><%= t.name %> <% if (t.archived) { %><span class="badge">archived</span><% } %></h1>
+    <span class="muted"><%- include('range', { t }) %></span>
+  </div>
+  <a class="btn btn-ghost btn-sm" href="/bloods/types/<%= t.id %>/edit">Edit</a>
+</div>
+<% if (t.notes) { %><p class="card note"><%= t.notes %></p><% } %>
+
+<section class="card">
+  <% if (points.length) { %>
+    <div class="blood-chart blood-chart-lg" data-blood-chart="<%= JSON.stringify(chart) %>" role="img" aria-label="Chart of <%= t.name %> results over time"></div>
+  <% } else { %>
+    <p class="muted small">No results yet. <a href="/bloods/new">Record a blood test</a>.</p>
+  <% } %>
+</section>
+
+<% if (points.length) { %>
+  <section class="section">
+    <h2>Results</h2>
+    <table class="results-table">
+      <thead><tr><th>Date</th><th>Result</th></tr></thead>
+      <tbody>
+        <% points.slice().reverse().forEach(p => { %>
+          <tr>
+            <td class="mono"><a href="/bloods/<%= p.test_id %>"><%= u.fmtDate(p.date) %></a></td>
+            <td class="mono <%= p.flag ? 'flag-' + p.flag : '' %>"><%= u.fmtNum(p.value, 3) %> <%= t.unit || '' %><% if (p.flag) { %> <span class="badge badge-late"><%= p.flag %></span><% } %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </section>
+<% } %>
+
+<section class="section row-actions">
+  <a class="btn btn-ghost" href="/bloods">← Blood tests</a>
+  <form method="post" action="/bloods/types/<%= t.id %>/archive"><%- csrf %><button class="btn btn-ghost"><%= t.archived ? 'Restore' : 'Archive' %></button></form>
+  <form method="post" action="/bloods/types/<%= t.id %>/delete" data-confirm="Delete <%= t.name %> and all <%= points.length %> of its results?"><%- csrf %><button class="btn btn-ghost danger-text">Delete</button></form>
+</section>
+<%- include('../partials/footer') %>

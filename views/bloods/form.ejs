@@ -1,0 +1,31 @@
+<%- include('../partials/header') %>
+<div class="page-head"><h1><%= title %></h1></div>
+<% if (error) { %><div class="flash flash-error"><%= error %></div><% } %>
+
+<form method="post" action="<%= isNew ? '/bloods' : '/bloods/' + test.id %>" class="card stack" id="blood-form">
+  <%- csrf %>
+  <label>Date taken
+    <input type="date" name="taken_on" required value="<%= values.taken_on || '' %>">
+  </label>
+
+  <fieldset>
+    <legend>Results</legend>
+    <div class="results" data-results>
+      <% rows.forEach(r => { %><%- include('result_row', { r, types }) %><% }) %>
+    </div>
+    <div class="row-actions">
+      <button type="button" class="btn btn-sm" data-add-result>+ Add another result</button>
+      <a class="btn btn-ghost btn-sm" href="/bloods/types/new?return_to=<%= isNew ? '/bloods/new' : '/bloods/' + test.id + '/edit' %>">New test type</a>
+    </div>
+  </fieldset>
+  <template id="result-row-tpl"><%- include('result_row', { r: {}, types }) %></template>
+
+  <label>Notes <span class="muted">(optional)</span>
+    <textarea name="notes" rows="2" placeholder="e.g. fasting, taken at GP surgery"><%= values.notes || '' %></textarea>
+  </label>
+  <div class="row-actions">
+    <button class="btn btn-primary"><%= isNew ? 'Save results' : 'Save' %></button>
+    <a class="btn btn-ghost" href="<%= isNew ? '/bloods' : '/bloods/' + test.id %>">Cancel</a>
+  </div>
+</form>
+<%- include('../partials/footer') %>

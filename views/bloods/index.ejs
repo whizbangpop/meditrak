@@ -1,0 +1,55 @@
+<%- include('../partials/header') %>
+<div class="page-head">
+  <h1>Blood tests</h1>
+  <div class="row-actions">
+    <a class="btn btn-ghost btn-sm" href="/bloods/types">Test types</a>
+    <a class="btn btn-primary" href="/bloods/new">+ Record</a>
+  </div>
+</div>
+
+<% if (!types.length) { %>
+  <section class="empty">
+    <h2>Track your blood results</h2>
+    <p>Add each test you have done — its name, unit and, if you know it, the normal range from your lab report. Then record results from each blood draw together and see how they change over time.</p>
+    <p><a class="btn btn-primary" href="/bloods/types/new">Add a test type</a></p>
+  </section>
+<% } %>
+
+<section class="list">
+  <% types.forEach(t => { %>
+    <article class="card blood-card">
+      <div class="blood-head">
+        <a class="plain-link grow" href="/bloods/types/<%= t.id %>">
+          <strong><%= t.name %></strong>
+          <div class="muted small mono"><%- include('range', { t }) %></div>
+        </a>
+        <% if (t.latest) { %>
+          <div class="stock-pill result-pill <%= t.latestFlag %>">
+            <strong><%= u.fmtNum(t.latest.value, 3) %></strong>
+            <span><%= t.unit || 'latest' %></span>
+          </div>
+        <% } %>
+      </div>
+      <% if (t.points.length) { %>
+        <div class="blood-chart" data-blood-chart="<%= JSON.stringify(t.chart) %>" role="img"
+          aria-label="<%= t.name %>: <%= t.points.length %> result<%= t.points.length === 1 ? '' : 's' %>, latest <%= u.fmtNum(t.latest.value, 3) %> <%= t.unit || '' %> on <%= u.fmtDate(t.latest.date) %>"></div>
+        <p class="muted small mono">Latest <%= u.fmtDate(t.latest.date) %><% if (t.latestFlag) { %> · <span class="flag-<%= t.latestFlag %>"><%= t.latestFlag === 'low' ? 'below' : 'above' %> range</span><% } %></p>
+      <% } else { %>
+        <p class="muted small">No results yet.</p>
+      <% } %>
+    </article>
+  <% }) %>
+</section>
+
+<% if (tests.length) { %>
+  <section class="section">
+    <h2>Recorded tests</h2>
+    <ul class="plain">
+      <% tests.forEach(b => { %>
+        <li><a href="/bloods/<%= b.id %>" class="mono"><%= u.fmtDate(b.taken_on) %></a>
+          <span class="muted small">· <%= b.n %> result<%= b.n === 1 ? '' : 's' %><% if (b.notes) { %> · <%= b.notes %><% } %></span></li>
+      <% }) %>
+    </ul>
+  </section>
+<% } %>
+<%- include('../partials/footer') %>

@@ -1,0 +1,30 @@
+<%- include('../partials/header') %>
+<div class="page-head">
+  <div>
+    <h1>Blood test</h1>
+    <span class="muted"><%= u.fmtDate(test.taken_on) %></span>
+  </div>
+  <a class="btn btn-ghost btn-sm" href="/bloods/<%= test.id %>/edit">Edit</a>
+</div>
+<% if (test.notes) { %><p class="card note"><%= test.notes %></p><% } %>
+
+<section class="card">
+  <table class="results-table">
+    <thead><tr><th>Test</th><th>Result</th><th>Range</th></tr></thead>
+    <tbody>
+      <% results.forEach(r => { %>
+        <tr>
+          <td><a href="/bloods/types/<%= r.id %>"><%= r.name %></a></td>
+          <td class="mono <%= r.flag ? 'flag-' + r.flag : '' %>"><%= u.fmtNum(r.value, 3) %> <%= r.unit || '' %><% if (r.flag) { %> <span class="badge badge-late"><%= r.flag %></span><% } %></td>
+          <td class="mono muted"><%- include('range', { t: r }) %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</section>
+
+<section class="section row-actions">
+  <a class="btn btn-ghost" href="/bloods">← All blood tests</a>
+  <form method="post" action="/bloods/<%= test.id %>/delete" data-confirm="Delete this blood test and all its results?"><%- csrf %><button class="btn btn-ghost danger-text">Delete</button></form>
+</section>
+<%- include('../partials/footer') %>

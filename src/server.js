@@ -121,6 +121,7 @@ app.use(require('./routes/profile'));
 app.use(require('./routes/doses'));
 app.use(require('./routes/medications'));
 app.use(require('./routes/disposables'));
+app.use(require('./routes/bloods'));
 
 app.use((req, res) => res.status(404).render('error', { title: 'Not found', message: 'That page does not exist.' }));
 

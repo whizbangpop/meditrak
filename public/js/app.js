@@ -101,6 +101,145 @@
     });
   }
 
+  // ---- Blood test form: rows of test + result -------------------------------
+  const bf = $('#blood-form');
+  if (bf) {
+    const list = $('[data-results]', bf);
+    const tpl = $('#result-row-tpl');
+    const syncUnit = (row) => {
+      const opt = $('[data-result-type]', row).selectedOptions[0];
+      $('[data-result-unit]', row).textContent = (opt && opt.dataset.unit) || '';
+    };
+    $('[data-add-result]', bf).addEventListener('click', () => {
+      list.appendChild(tpl.content.cloneNode(true));
+      list.lastElementChild.querySelector('select').focus();
+    });
+    list.addEventListener('change', (e) => {
+      if (e.target.matches('[data-result-type]')) {
+        syncUnit(e.target.closest('.result-row'));
+        e.target.closest('.result-row').querySelector('input').focus();
+      }
+    });
+    list.addEventListener('click', (e) => {
+      const row = e.target.closest('[data-remove-result]')?.closest('.result-row');
+      if (!row) return;
+      if (list.children.length > 1) row.remove();
+      else {
+        row.querySelector('select').value = '';
+        row.querySelector('input').value = '';
+        syncUnit(row);
+      }
+    });
+  }
+
+  // ---- Blood result charts (SVG drawn at the real pixel width) --------------
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const DAY = 864e5;
+  const parseDay = (s) => Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10));
+  const fmtDay = (t, year = true) => {
+    const d = new Date(t);
+    return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}${year ? ' ' + String(d.getUTCFullYear()).slice(2) : ''}`;
+  };
+  function el(name, attrs, parent, text) {
+    const n = document.createElementNS(SVGNS, name);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    if (text !== undefined) n.textContent = text;
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  /** ~count "nice" ticks (1/2/5 × 10^n) covering [lo, hi] */
+  function niceTicks(lo, hi, count) {
+    const raw = (hi - lo) / Math.max(count, 1);
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 2, 5, 10].map((m) => m * mag).find((s) => s >= raw);
+    const ticks = [];
+    for (let v = Math.ceil(lo / step) * step; v <= hi + step * 1e-9; v += step) ticks.push(Number(v.toFixed(10)));
+    return ticks;
+  }
+
+  function drawBloodChart(box) {
+    const data = JSON.parse(box.dataset.bloodChart);
+    const pts = data.points.map(([d, v]) => ({ t: parseDay(d), v, d }));
+    const W = Math.max(box.clientWidth, 240);
+    const H = box.classList.contains('blood-chart-lg') ? Math.min(Math.max(W * 0.5, 220), 340) : Math.min(Math.max(W * 0.38, 170), 230);
+    const hasMin = data.min !== null && data.min !== undefined;
+    const hasMax = data.max !== null && data.max !== undefined;
+
+    // Y domain: the results plus any range limits, with some headroom
+    const vals = pts.map((p) => p.v).concat(hasMin ? [data.min] : [], hasMax ? [data.max] : []);
+    let lo = Math.min(...vals);
+    let hi = Math.max(...vals);
+    const pad = hi === lo ? Math.abs(hi) * 0.2 || 1 : (hi - lo) * 0.12;
+    lo -= pad;
+    hi += pad;
+    if (Math.min(...vals) >= 0 && lo < 0) lo = 0;
+    const yTicks = niceTicks(lo, hi, H > 220 ? 5 : 4);
+    lo = Math.min(lo, yTicks[0]);
+    hi = Math.max(hi, yTicks[yTicks.length - 1]);
+
+    // X domain: by date; a lone result sits in the middle of a month-wide window
+    let t0 = pts[0].t;
+    let t1 = pts[pts.length - 1].t;
+    if (t1 - t0 < DAY) {
+      t0 -= 15 * DAY;
+      t1 += 15 * DAY;
+    }
+    const tickW = Math.max(...yTicks.map((v) => fmt(v).length)) * 7 + 10;
+    // Range limit labels sit in a right-hand gutter so they never cover a point
+    const limitLabels = [hasMax && `Max ${fmt(data.max)}`, hasMin && `Min ${fmt(data.min)}`].filter(Boolean);
+    const m = { l: tickW, r: limitLabels.length ? Math.max(...limitLabels.map((s) => s.length)) * 6.6 + 12 : 14, t: 14, b: 26 };
+    const x = (t) => m.l + ((t - t0) / (t1 - t0)) * (W - m.l - m.r);
+    const y = (v) => m.t + (1 - (v - lo) / (hi - lo)) * (H - m.t - m.b);
+
+    const svg = el('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}`, class: 'bchart', 'aria-hidden': 'true' });
+
+    if (hasMin && hasMax) el('rect', { x: m.l, y: y(data.max), width: W - m.l - m.r, height: y(data.min) - y(data.max), class: 'bc-band' }, svg);
+    yTicks.forEach((v) => {
+      el('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: 'bc-grid' }, svg);
+      el('text', { x: m.l - 6, y: y(v) + 4, class: 'bc-tick', 'text-anchor': 'end' }, svg, fmt(v));
+    });
+
+    const spanYears = new Date(t0).getUTCFullYear() !== new Date(t1).getUTCFullYear();
+    const nX = Math.max(2, Math.min(6, Math.floor((W - m.l - m.r) / 90)));
+    const xTicks = pts.length <= nX ? pts.map((p) => p.t) : Array.from({ length: nX }, (_, i) => t0 + ((t1 - t0) * i) / (nX - 1));
+    xTicks.forEach((t, i) => {
+      const anchor = xTicks.length > 1 && i === 0 && x(t) - m.l < 30 ? 'start' : xTicks.length > 1 && i === xTicks.length - 1 && W - m.r - x(t) < 30 ? 'end' : 'middle';
+      el('text', { x: x(t), y: H - 8, class: 'bc-tick', 'text-anchor': anchor }, svg, fmtDay(t, spanYears || pts.length === 1));
+    });
+
+    // Reference range marker lines
+    const marker = (v, label, dy) => {
+      el('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: 'bc-limit' }, svg);
+      el('text', { x: W - m.r + 6, y: y(v) + 4 + dy, class: 'bc-limit-label' }, svg, label);
+    };
+    // Nudge the labels apart when the range is narrow on screen
+    const gap = hasMin && hasMax ? Math.max(0, 13 - (y(data.min) - y(data.max))) / 2 : 0;
+    if (hasMax) marker(data.max, limitLabels[0], -gap);
+    if (hasMin) marker(data.min, limitLabels[limitLabels.length - 1], gap);
+
+    if (pts.length > 1) el('polyline', { points: pts.map((p) => `${x(p.t)},${y(p.v)}`).join(' '), class: 'bc-line' }, svg);
+    pts.forEach((p) => {
+      const out = (hasMin && p.v < data.min) || (hasMax && p.v > data.max);
+      const g = el('g', { class: 'bc-pt' + (out ? ' out' : '') }, svg);
+      el('circle', { cx: x(p.t), cy: y(p.v), r: 4.5 }, g);
+      el('circle', { cx: x(p.t), cy: y(p.v), r: 14, class: 'bc-hit' }, g);
+      el('title', {}, g, `${fmt(p.v)} ${data.unit} · ${fmtDay(p.t)}${out ? (hasMin && p.v < data.min ? ' · below range' : ' · above range') : ''}`);
+    });
+
+    box.replaceChildren(svg);
+  }
+  const charts = $$('[data-blood-chart]');
+  if (charts.length) {
+    charts.forEach(drawBloodChart);
+    let lastW = window.innerWidth;
+    window.addEventListener('resize', () => {
+      if (window.innerWidth === lastW) return;
+      lastW = window.innerWidth;
+      charts.forEach(drawBloodChart);
+    });
+  }
+
   // ---- Install prompt (Android/Chrome) --------------------------------------
   let deferredPrompt = null;
   const installBtn = $('[data-install]');

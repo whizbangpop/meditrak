@@ -1,0 +1,11 @@
+<div class="result-row">
+  <select name="type_id" aria-label="Test" data-result-type>
+    <option value="">Choose test…</option>
+    <% types.forEach(t => { %><option value="<%= t.id %>" data-unit="<%= t.unit || '' %>" <%= String(r.type_id) === String(t.id) ? 'selected' : '' %>><%= t.name %><%= t.unit ? ' (' + t.unit + ')' : '' %></option><% }) %>
+  </select>
+  <div class="input-suffix">
+    <input type="number" name="value" step="any" inputmode="decimal" aria-label="Result" placeholder="Result" value="<%= r.value ?? '' %>">
+    <span data-result-unit><%= (types.find(t => String(t.id) === String(r.type_id)) || {}).unit || '' %></span>
+  </div>
+  <button type="button" class="btn btn-ghost btn-sm" data-remove-result aria-label="Remove result">✕</button>
+</div>

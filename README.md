@@ -12,6 +12,9 @@ A self-hosted, server-rendered medication tracker you can install on your phone 
   a live conversion ("= 2 tablets", "≈ 0.4 ml at 50 mg/ml").
 - **Supplies** — syringes, needles, swabs etc. Link them to a medication with a per-dose
   quantity to use them automatically; you can also use, restock or recount them manually.
+- **Blood tests** — define each test you track (name, unit, optional minimum/maximum range),
+  record all the results from one blood draw in a single form, and see each test charted over
+  time with dashed marker lines at the range limits and out-of-range results flagged.
 - **Today view** — take / adjust / skip each dose, undo mistakes (stock is restored), plus
   alerts for low stock, days of supply left, expiring and expired items.
 - **Reminders** — Web Push notifications at each dose time with a *Mark taken* button, and an
@@ -67,7 +70,7 @@ src/
   schedule.js      Dose time engine (time-zone and DST aware)
   stock.js         Stock maths, dose recording/undo, disposable usage
   push.js          VAPID/web-push, reminder scheduler (every 30s), signed action tokens
-  routes/          doses (Today, history), medications (+stock, schedules), disposables, profile, push API
+  routes/          doses (Today, history), medications (+stock, schedules), disposables, bloods, profile, push API
 views/             EJS templates
 public/            CSS, client JS, service worker, manifest, icons
 ```

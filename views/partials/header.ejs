@@ -29,6 +29,7 @@
         <a href="/" class="<%= currentPath === '/' ? 'active' : '' %>">Chart</a>
         <a href="/medications" class="<%= currentPath.startsWith('/medications') || currentPath.startsWith('/stock') || currentPath.startsWith('/schedules') ? 'active' : '' %>">Medicines</a>
         <a href="/disposables" class="<%= currentPath.startsWith('/disposables') ? 'active' : '' %>">Supplies</a>
+        <a href="/bloods" class="<%= currentPath.startsWith('/bloods') ? 'active' : '' %>">Bloods</a>
         <a href="/history" class="<%= currentPath.startsWith('/history') ? 'active' : '' %>">History</a>
         <a href="/profile" class="<%= currentPath.startsWith('/profile') ? 'active' : '' %>">Profile</a>
       </nav>
